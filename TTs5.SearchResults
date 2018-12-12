@@ -1,0 +1,53 @@
+---- lAvgPhase Matches (68 in 2 files) ----
+Clock_rb.c:         p_collect_data->lAvgPhase=sum/(p_collect_data->ph_number-2);      /*计算平均相位值*/
+Clock_rb.c:    p_clock_info->IDetPhase= p_clock_info->data_1Hz.lAvgPhase-p_clock_info->lPhasePrevious;
+Clock_rb.c:    printf("lAvgPhase= %f  lPhasePrevious= %f   IDetPhase= %f,OffsetAll =%f,bInitiatlClear = %d \r\n"
+Clock_rb.c:        ,p_clock_info->data_1Hz.lAvgPhase,p_clock_info->lPhasePrevious
+Clock_rb.c:        p_clock_info->lPhasePrevious = p_clock_info->data_1Hz.lAvgPhase;
+Clock_rb.c:        if((p_clock_info->data_1Hz.lAvgPhase>2000)||(p_clock_info->data_1Hz.lAvgPhase<-2000))
+Clock_rb.c:             printf("0 adj lAvgPhase=%d \r\n",p_clock_info->data_1Hz.lAvgPhase);
+Clock_rb.c:    p_clock_info->lPhasePrevious=p_clock_info->data_1Hz.lAvgPhase;
+Clock_rb.c:    p_clock_info->IDetPhase = (p_clock_info->data_1Hz.lAvgPhase-p_clock_info->lPhasePrevious);
+Clock_rb.c:	printf("lAvgPhase= %f  lPhasePrevious= %f   IDetPhase= %f,OffsetAll =%f,bInitiatlClear = %d \r\n"
+Clock_rb.c:        ,p_clock_info->data_1Hz.lAvgPhase,p_clock_info->lPhasePrevious
+Clock_rb.c:        p_clock_info->lPhasePrevious = p_clock_info->data_1Hz.lAvgPhase;
+Clock_rb.c:        if((p_clock_info->data_1Hz.lAvgPhase>1000)||(p_clock_info->data_1Hz.lAvgPhase<-1000))
+Clock_rb.c:    p_clock_info->lPhasePrevious=p_clock_info->data_1Hz.lAvgPhase;
+Clock_rb.c:    p_clock_info->IDetPhase= p_clock_info->data_1Hz.lAvgPhase-p_clock_info->lPhasePrevious;
+Clock_rb.c:	printf("lAvgPhase= %f  lPhasePrevious= %f   IDetPhase= %f,OffsetAll =%f,bInitiatlClear = %d \r\n"
+Clock_rb.c:        ,p_clock_info->data_1Hz.lAvgPhase,p_clock_info->lPhasePrevious
+Clock_rb.c:        p_clock_info->lPhasePrevious = p_clock_info->data_1Hz.lAvgPhase;
+Clock_rb.c:        if(p_clock_info->data_1Hz.lAvgPhase >3000.0 || p_clock_info->data_1Hz.lAvgPhase < -3000.0)
+Clock_rb.c:        if((p_clock_info->data_1Hz.lAvgPhase>3000.0)||(p_clock_info->data_1Hz.lAvgPhase<-3000.0))
+Clock_rb.c:			 printf("0 adj lAvgPhase=%d \r\n",p_clock_info->data_1Hz.lAvgPhase);
+Clock_rb.c:			if(p_clock_info->data_1Hz.lAvgPhase<0)
+Clock_rb.c:    p_clock_info->lPhasePrevious=p_clock_info->data_1Hz.lAvgPhase;
+Clock_rb.c:    p_clock_info->IDetPhase = (p_clock_info->data_1Hz.lAvgPhase-p_clock_info->lPhasePrevious);
+Clock_rb.c:    printf("lAvgPhase= %f  lPhasePrevious= %f   IDetPhase= %f,OffsetAll =%f,bInitiatlClear = %d \r\n"
+Clock_rb.c:        ,p_clock_info->data_1Hz.lAvgPhase,p_clock_info->lPhasePrevious
+Clock_rb.c:        p_clock_info->lPhasePrevious = p_clock_info->data_1Hz.lAvgPhase;
+Clock_rb.c:        if(p_clock_info->data_1Hz.lAvgPhase >5000.0 || p_clock_info->data_1Hz.lAvgPhase < -5000.0)
+Clock_rb.c:        //p_clock_info->lDetDdsAdj+=p_clock_info->data_1Hz.lAvgPhase/GpsLockG2;
+Clock_rb.c:        printf("IDetPhase=%f lAvgPhase=%f \r\n ",p_clock_info->IDetPhase,p_clock_info->data_1Hz.lAvgPhase);
+Clock_rb.c:        if((p_clock_info->data_1Hz.lAvgPhase>3000.0)||(p_clock_info->data_1Hz.lAvgPhase<-3000.0))
+Clock_rb.c:             printf("0 adj lAvgPhase=%d \r\n",p_clock_info->data_1Hz.lAvgPhase);
+Clock_rb.c:            if(p_clock_info->data_1Hz.lAvgPhase<0)
+Clock_rb.c:            printf("lock adj lAvgPhase=%f \r\n",p_clock_info->data_1Hz.lAvgPhase);
+Clock_rb.c:    p_clock_info->lPhasePrevious=p_clock_info->data_1Hz.lAvgPhase;
+Clock_rb.c:    p_clock_info->IDetPhase= p_clock_info->data_1Hz.lAvgPhase-p_clock_info->lPhasePrevious;
+Clock_rb.c:    printf("lAvgPhase= %f  lPhasePrevious= %f   IDetPhase= %f,OffsetAll =%f,bInitiatlClear = %d \r\n"
+Clock_rb.c:        ,p_clock_info->data_1Hz.lAvgPhase,p_clock_info->lPhasePrevious
+Clock_rb.c:        p_clock_info->lPhasePrevious = p_clock_info->data_1Hz.lAvgPhase;
+Clock_rb.c:        if((p_clock_info->data_1Hz.lAvgPhase>3000)||(p_clock_info->data_1Hz.lAvgPhase<-3000))
+Clock_rb.c:             printf("0 adj lAvgPhase=%d \r\n",p_clock_info->data_1Hz.lAvgPhase);
+Clock_rb.c:    p_clock_info->lPhasePrevious=p_clock_info->data_1Hz.lAvgPhase;
+Clock_rb.c:    p_clock_info->IDetPhase = (p_clock_info->data_1Hz.lAvgPhase-p_clock_info->lPhasePrevious);
+Clock_rb.c:	printf("lAvgPhase= %f  lPhasePrevious= %f   IDetPhase= %f,OffsetAll =%f,bInitiatlClear = %d \r\n"
+Clock_rb.c:        ,p_clock_info->data_1Hz.lAvgPhase,p_clock_info->lPhasePrevious
+Clock_rb.c:        p_clock_info->lPhasePrevious = p_clock_info->data_1Hz.lAvgPhase;
+Clock_rb.c:        //p_clock_info->lDetDdsAdj+=p_clock_info->data_1Hz.lAvgPhase/GpsLockG2;
+Clock_rb.c:        printf("IDetPhase=%f lAvgPhase=%f  lAccPhaseAll=%f  \r\n ",p_clock_info->IDetPhase,p_clock_info->data_1Hz.lAvgPhase,p_clock_info->lAccPhaseAll);
+Clock_rb.c:        if((p_clock_info->data_1Hz.lAvgPhase<-1500)||(p_clock_info->data_1Hz.lAvgPhase>1500))     //2000hg700
+Clock_rb.c:                 //printf("lock adj lAvgPhase=%f \r\n",p_clock_info->data_1Hz.lAvgPhase);
+Clock_rb.c:    p_clock_info->lPhasePrevious=p_clock_info->data_1Hz.lAvgPhase;
+Clock_rb.h:   double  lAvgPhase;       /*平均鉴相数据*/
