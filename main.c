@@ -229,7 +229,6 @@ void InitLoadRtcTime(struct root_data *pRootData)
     
     tv.tv_sec += pSateData->gps_utc_leaps;
     tv.tv_sec += 19;
-    tv.tv_sec += 1;
   
     SetFpgaTime(tv.tv_sec);
 }

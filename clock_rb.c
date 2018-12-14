@@ -911,6 +911,7 @@ void ntp_status_machine(struct clock_info *p_clock_info,char ref_status)
                p_clock_info->workStatus=HOLD; 
             else if((ref_status==1)&&(p_clock_info->fast_times>=300))
 			{
+               system("hwclock -w");
                p_clock_info->workStatus=LOCK;
 			   p_clock_info->unlockCounter=0;
 			 }
