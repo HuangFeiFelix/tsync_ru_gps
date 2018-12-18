@@ -902,7 +902,6 @@ void ntp_status_machine(struct clock_info *p_clock_info,char ref_status)
              { /*add */ 
                p_clock_info->workStatus=FAST;  /**/
              }
-
         }
       	    break;
      	case FAST:
@@ -923,6 +922,9 @@ void ntp_status_machine(struct clock_info *p_clock_info,char ref_status)
             if(ref_status==0) /*参考源告警*/
                p_clock_info->workStatus= HOLD;
              p_clock_info->lock_times++;/*锁定用时*/
+             
+             if(p_clock_info->lock_times % 3600 == 0)
+                system("hwclock -w");
          }
       		break;
      	case HOLD:	
