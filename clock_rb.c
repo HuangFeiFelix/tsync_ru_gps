@@ -409,7 +409,7 @@ void m10_lock_handle(struct clock_info *p_clock_info)
     
         if((p_clock_info->IDetPhase>-500)&&(p_clock_info->IDetPhase<500))  //p_clock_info->lDetDdsAdj
         {
-            printf("Update RTC ----\r\n");
+            
             if(p_clock_info->unlockCounter>1) 
                 p_clock_info->unlockCounter--;
         }
@@ -840,6 +840,8 @@ void ptp_status_machine(struct clock_info *p_clock_info,char ref_status)
     if(status!=p_clock_info->workStatus)    /*工作状态变化*/
     {
         printf("workStatus change  workStatus= %d\r\n",p_clock_info->workStatus);
+        syslog(CLOG_DEBUG,"workStatus change  workStatus= %d\n",p_clock_info->workStatus);
+
         switch(p_clock_info->workStatus)
         {
         case FREE:   
@@ -951,7 +953,7 @@ void ntp_status_machine(struct clock_info *p_clock_info,char ref_status)
     if(status!=p_clock_info->workStatus)    /*工作状态变化*/
     {
 		printf("workStatus change  workStatus= %d\r\n",p_clock_info->workStatus);
-        logFileMessage("workStatus change  workStatus= %d\r\n",p_clock_info->workStatus);
+        syslog(CLOG_DEBUG,"workStatus change  workStatus= %d\r\n",p_clock_info->workStatus);
         switch(p_clock_info->workStatus)
         {
         case FREE:   
@@ -1075,7 +1077,7 @@ void gps_status_machine(struct clock_info *p_clock_info,char ref_status)
     if(status!=p_clock_info->workStatus)    /*工作状态变化*/
     {
 		printf("workStatus change  workStatus= %d\r\n",p_clock_info->workStatus);
-        logFileMessage("workStatus change  workStatus= %d\r\n",p_clock_info->workStatus);
+        syslog(CLOG_DEBUG,"workStatus change  workStatus= %d\r\n",p_clock_info->workStatus);
         switch(p_clock_info->workStatus)
         {
         case FREE:   
@@ -1199,6 +1201,8 @@ void m10_status_machine(struct clock_info *p_clock_info,char ref_status)
     if(status!=p_clock_info->workStatus)    /*工作状态变化*/
     {
 		printf("workStatus change  workStatus= %d\r\n",p_clock_info->workStatus);
+        syslog(CLOG_DEBUG,"workStatus change  workStatus= %d\n",p_clock_info->workStatus);
+
         switch(p_clock_info->workStatus)
         {
         case FREE:   

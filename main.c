@@ -175,32 +175,32 @@ void Init_Thread_Attr(pthread_attr_t *pThreadAttr)
     ret = pthread_attr_init(pThreadAttr);
     if(ret != 0)
     {
-        PLOG("pthread_attr_init error!\n");
+        printf("pthread_attr_init error!\n");
     }
  
     ret = pthread_attr_setscope(pThreadAttr,PTHREAD_SCOPE_SYSTEM);
     if(ret != 0)
     {
-        PLOG("PTHREAD_SCOPE_SYSTEM error!\n");
+        printf("PTHREAD_SCOPE_SYSTEM error!\n");
     }
  
     ret = pthread_attr_setschedpolicy(pThreadAttr,SCHED_RR);
     if(ret != 0)
     {
-        PLOG("pthread_attr_setschedpolicy error!\n");
+        printf("pthread_attr_setschedpolicy error!\n");
     }
         
     pthread_attr_getschedparam(pThreadAttr,  &thread_param);
-    PLOG("schedparam :%d\n",thread_param.sched_priority);
+    printf("schedparam :%d\n",thread_param.sched_priority);
 
     /**ÓÅÏÈ¼¶  */
     pthread_attr_getschedpolicy(pThreadAttr,&policy);
     if(policy == SCHED_FIFO)
-         PLOG("Schedpolicy:SCHED_FIFO\n");
+         printf("Schedpolicy:SCHED_FIFO\n");
     if(policy==SCHED_RR)
-         PLOG("Schedpolicy:SCHED_RR\n");
+         printf("Schedpolicy:SCHED_RR\n");
     if(policy==SCHED_OTHER)
-         PLOG("Schedpolicy:SCHED_OTHER\n");
+         printf("Schedpolicy:SCHED_OTHER\n");
  
     /*param.sched_priority=30;*/
     pthread_attr_setschedparam(pThreadAttr,  &thread_param);
@@ -674,7 +674,7 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
         secErrorCnt++;
         if(secErrorCnt>5)
         {
-            logFileMessage("=========setFpgaTime==%d===\n",Time);
+            syslog(CLOG_DEBUG,"setFpgaTime=%d\n",Time);
             /**Ð´ÏÂÒ»ÃëµÄÖµfgpa ÄÚ²¿´¦Àí  */
             SetFpgaTime(Time);
             secErrorCnt = 0;
@@ -702,6 +702,7 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
 
 				// µµ²Î¿¼Ô´ÎªntpµÄÊ±ºò£¬²»ÐèÒªÔÙµ÷ÏµÍ³Ê±¼ä
             ioctl(fd,COMM_MODIFY_SEC,1);
+            syslog(CLOG_DEBUG,"set systemtime-5-");
 
             ntpsecErrorCnt = 0;
         }
@@ -983,9 +984,6 @@ void updatePtpStatus(struct root_data *pRootData,Uint16 nTimeCnt)
     struct Satellite_Data *pSateData = &pRootData->satellite_data;     
     struct PtpStatus mPtpStatus;
 
-    if(nTimeCnt%1000 == 0)
-        system("hwclock -w");
-
     if(nTimeCnt%6 == 0)
     {
         memset(&mPtpStatus,0,sizeof(mPtpStatus));
@@ -1093,6 +1091,9 @@ void *ThreadUsuallyProcess(void *arg)
             /**LED  ´¦Àí*/
             Control_LedRun(nTimeCnt%2);
 
+            if(nTimeCnt%1250 == 0)
+                system("hwclock -w");
+            
             if(pClockInfo->ref_type == REF_SATLITE)
             {
                 if(pClockAlarm->alarmBd1pps == 1 || pClockAlarm->alarmDisk == 1)
@@ -1273,7 +1274,7 @@ int main(int argc,char *argv[])
     int c;
     int val;
     printf("Hardware Version V1.00\n");
-    printf("SoftWare Version V0.11\n");
+    printf("SoftWare Version V0.12\n");
     
     g_RootData = (struct root_data *)malloc(sizeof(struct root_data));
 	if (g_RootData == NULL)
@@ -1319,11 +1320,15 @@ int main(int argc,char *argv[])
     signal(SIGINT, IntExit);
     Wait_For_EnvConfig();
 
+    syslog_init();
+
     start_ntp_daemon();
     start_ptp_daemon();
 
     InitLoadRtcTime(g_RootData);
- 
+
+    syslog(CLOG_DEBUG,"tsync deamon starting running\n");
+    
     /** ´´½¨ÈÕ³£´¦ÀíÏß³Ì */
 	err = pthread_create(&g_RootData->p_usual,&g_RootData->pattr,(void *)ThreadUsuallyProcess,(void *)g_RootData);	
 	if(err == 0)

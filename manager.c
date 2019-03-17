@@ -404,7 +404,7 @@ Uint8  VerifyMacAddress(Uint8 * src,Uint8  *tmac)
 			}
 			else
 			{
-				//PLOG("k2=%c,i=%d,k=%d\n",tsrc[0],i,k);
+				//printf("k2=%c,i=%d,k=%d\n",tsrc[0],i,k);
 				return 0;
 			}
 
@@ -426,7 +426,7 @@ Uint8  VerifyMacAddress(Uint8 * src,Uint8  *tmac)
 			}
 			else
 			{
-				//PLOG("k1=%c,i=%d,k=%d\n",tsrc[0],i,k);
+				//printf("k1=%c,i=%d,k=%d\n",tsrc[0],i,k);
 				return 0;
 			}
 			if((tsrc[1]>=0x30)&&(tsrc[1]<=0x39))   /* "0"~~"9"*/
@@ -443,14 +443,14 @@ Uint8  VerifyMacAddress(Uint8 * src,Uint8  *tmac)
 			}
 			else
 			{
-				//PLOG("k2=%c,i=%d,k=%d\n",tsrc[1],i,k);
+				//printf("k2=%c,i=%d,k=%d\n",tsrc[1],i,k);
 				return 0;
 			}
 		}
 		tnum=k1*0x10+k2;
 		if(tnum < 0 || tnum > 255)
 		{
-			//PLOG("i=%d,tnum=%d\n",i,tnum);
+			//printf("i=%d,tnum=%d\n",i,tnum);
 			return 0;
 		}
 		tmac[i]=tnum&0xff;

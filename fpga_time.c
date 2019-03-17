@@ -1,6 +1,7 @@
 #include "fpga_time.h"
 #include <sys/mman.h>
 #include "main.h"
+#include "log.h"
 
 #define PHY_BASEADD             0x40600000      /*控制部分基地址*/
 
@@ -324,7 +325,7 @@ void SetRbClockAlign_Once()
 	Uint32 offset;
 	int flag;
 
-    logFileMessage("--------SetRbClockAlign_Once\r\n");
+    syslog(CLOG_DEBUG,"SetRbClockAlign_Once\r\n");
     
 	offset = *(Uint32*)(BASE_ADDR + 0x10);
 	if(offset&0x80000000)
