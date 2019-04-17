@@ -1274,7 +1274,7 @@ int main(int argc,char *argv[])
     int c;
     int val;
     printf("Hardware Version V1.00\n");
-    printf("SoftWare Version V0.12\n");
+    printf("SoftWare Version V0.13\n");
     
     g_RootData = (struct root_data *)malloc(sizeof(struct root_data));
 	if (g_RootData == NULL)

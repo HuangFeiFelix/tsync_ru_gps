@@ -354,6 +354,8 @@ int Get_Pps_Rb_PhaseOffset()
 	
     if(offset&0x80000000)
   		return (-1)* offset;
+    else
+        return offset;
     
 }
 
