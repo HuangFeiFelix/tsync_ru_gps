@@ -209,6 +209,7 @@ static inline int m_data_list(struct data_list **data_list) {
 static inline void init_data_head(struct data_head *new_head,int type,pthread_rwlock_t *list_rwlock) {
 	new_head->type = type;
 	new_head->list_rwlock = list_rwlock;
+    new_head->count = 0;
 	INIT_LIST_HEAD(&new_head->list_head);
 }
 
@@ -274,8 +275,11 @@ static inline struct data_list *add_recv_data(char *data,int fd,int len,struct d
 	if(!init_data_list(&new_list))
 		return NULL;
 	p_recv_lev = &new_list->recv_lev;
-	//time_now = time(NULL);
-	malloc_data(&p_recv_lev->data,data,len);
+
+	if(NULL == malloc_data(&p_recv_lev->data,data,len))
+	{
+        return NULL;
+    }
 	//p_recv_lev->recv_time = time_now;
 	p_recv_lev->fd = fd;
 	p_recv_lev->len = len;
@@ -296,9 +300,12 @@ static inline struct data_list *add_send_data(char *data,int len,int type,struct
 	if(!init_data_list(&new_list))
 		return NULL;
 	p_send_lev = &new_list->send_lev;
-	//time_now = time(NULL);
 
-	malloc_data(&p_send_lev->data,data,len);
+	if(NULL == malloc_data(&p_send_lev->data,data,len))
+	{
+        return NULL;
+    }
+    
 	p_send_lev->len = len;
 	//p_send_lev->add_time = time_now;
 	p_send_lev->send_time = 0;
@@ -317,6 +324,11 @@ static inline struct data_list *add_net(int fd,struct sockaddr_in *dev_sockaddr,
 static inline struct data_list *add_recv(char *data,int fd,int len,struct device *p_dev) {
 	struct data_list *p_data_list = NULL;
 	p_data_list = add_recv_data(data,fd,len,&p_dev->data_head[0]);
+    if(NULL == p_data_list)
+    {
+        return NULL;
+    }
+    
 	sem_post(p_dev->p_sem[0]);
 	return p_data_list;
 }
@@ -324,6 +336,11 @@ static inline struct data_list *add_recv(char *data,int fd,int len,struct device
 static inline struct data_list *add_send(char *data,int len,struct device *p_dev) {
 	struct data_list *p_data_list = NULL;
 	p_data_list = add_send_data(data,len,0,&p_dev->data_head[1]);
+
+    // if malloc fail return NULL
+    if(p_data_list == NULL)
+        return NULL;
+    
 	sem_post(p_dev->p_sem[1]);
 	return p_data_list;
 }

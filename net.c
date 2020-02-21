@@ -314,18 +314,37 @@ unsigned char DelGateWay(char *pInterface,unsigned int DelGateWay)
     return TRUE;
 }
 
-unsigned char SetGateWay(char *pInterface,unsigned int ip,unsigned int gateway)
+unsigned char SetGateWay(char *pInterface,unsigned int ip,unsigned int netmask,unsigned int gateway)
 {
-    unsigned char cmd[50];  
+    unsigned char cmd[512];  
     memset(cmd,0,sizeof(cmd));
     if(gateway == 0)
     {
         printf("gateway ==0 invalid\n");
         return 0;
     }
-    sprintf(cmd,"route add default gw %d.%d.%d.%d"
-    ,gateway&0xff,(gateway>>8)&0xff,(gateway>>16)&0xff,(gateway>>24)&0xff);
 
+    if(ip == 0)
+    {
+        printf("ip ==0 invalid\n");
+        return 0;
+    }
+
+    unsigned int network_ip = ip & netmask;
+
+    //sprintf(cmd,"route add -net %d.%d.%d.%d netmask %d.%d.%d.%d gw %d.%d.%d.%d"
+        //,network_ip&0xff,(network_ip>>8)&0xff,(network_ip>>16)&0xff,(network_ip>>24)&0xff
+        //,netmask&0xff,(netmask>>8)&0xff,(netmask>>16)&0xff,(netmask>>24)&0xff
+        //,gateway&0xff,(gateway>>8)&0xff,(gateway>>16)&0xff,(gateway>>24)&0xff);
+
+    //route add default gw %d.%d.%d.%d",gateway&0xff,(gateway>>8)&0xff,(gateway>>16)&0xff,(gateway>>24)&0xff);
+
+    //route add -net 221.130.33.60 netmask 255.255.255.255 gw 10.65.208.10
+        
+    sprintf(cmd,"route add default gw %d.%d.%d.%d netmask %d.%d.%d.%d"
+    ,gateway&0xff,(gateway>>8)&0xff,(gateway>>16)&0xff,(gateway>>24)&0xff
+    ,netmask&0xff,(netmask>>8)&0xff,(netmask>>16)&0xff,(netmask>>24)&0xff);
+    printf("%s\n",cmd);
     system(cmd);
     printf("\n");
     return 1;
@@ -400,91 +419,6 @@ unsigned char AddGateWay(char *pInterface,unsigned int NewGateWay)
     return TRUE;
 
 }
-
-#if 0
-/**********************************************************************
- * Function:      SetGateWay
- * Description:   设置网关，先删除已经有的，再添加新的
- * Input:         pInterface ：网络接口名字 如：eth0，DelGateWay：删除的网关，
-				  NewGateWay： 新添加的网关
- * Return:        成功 1，失败 0
- * Others:        
-**********************************************************************/
-unsigned char SetGateWay(char *pInterface,unsigned int DelGateWay,unsigned int NewGateWay)
-{
-
-    struct sockaddr_in *sinaddr;
-    struct rtentry rt;
-    struct sockaddr rtsockaddr;
-    int sockfd;
-
-    /* 判断接口输入是否正确 */
-    if((pInterface == NULL)||(pInterface[0]!='e')||(pInterface[1]!='t')||(pInterface[2]!='h'))
-    {
-        printf("input inteface error!\n");
-        return FALSE;
-    }
-    if((DelGateWay == 0) && (NewGateWay == 0))
-    {
-        printf("input GateWay error!\n");
-        return FALSE;
-    }
-    
-	sockfd= socket(AF_INET,SOCK_DGRAM,0);
-	if (sockfd<0)
-	{
-		printf("Can't creat socket  \r\n");
-	}
-
-
-	/* Clean out the RTREQ structure. */
-	memset((char *) &rt, 0, sizeof(struct rtentry));
-	memset((char *)&rtsockaddr,0,sizeof(struct sockaddr));
-	sinaddr = (struct sockaddr_in *)&rtsockaddr;
-	sinaddr->sin_family = AF_INET;
-    
-    /*INADDR_ANY就是指定地址为0.0.0.0的地址,这个地址事实上表示不确定地址,或“所有地址”、“任意地址”*/
-	sinaddr->sin_addr.s_addr = INADDR_ANY;	
-    
-    /*set the destination address to '0.0.0.0'*/
-	rt.rt_dst = rtsockaddr;
-
-    /*set the netmask to '0.0.0.0'*/
-	rt.rt_genmask = rtsockaddr;			
-
-	/* Fill in the other fields. */
-	rt.rt_flags = (RTF_UP|RTF_GATEWAY);
-	rt.rt_metric = 1;
-	rt.rt_dev = pInterface;
-
-    
-	/*delete the current default gateway*/
-	sinaddr->sin_addr.s_addr = DelGateWay;
-	rt.rt_gateway = rtsockaddr;
-
-    if(DelGateWay != 0)
-    {
-        if (0 > ioctl(sockfd, SIOCDELRT, &rt)) 
-        {
-            printf("Can't delete the current default gateway\r\n");
-        }
-    }
-
-
-	/*set the new default gateway*/
-	sinaddr->sin_addr.s_addr = NewGateWay;
-	rt.rt_gateway =rtsockaddr;
-	    
-	if (0 > ioctl(sockfd, SIOCADDRT, &rt))
-	{
-		printf("Can't set the new default gateway\r\n");
-	}
-
-    close(sockfd);
-
-    return TRUE;
-}
-#endif
 
 /**********************************************************************
  * Function:      GetMacAddress

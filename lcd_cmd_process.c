@@ -470,9 +470,11 @@ void HandleCtlEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 cont
 
 	if (ip == 0)
 		ip = pRootData->comm_port.ip;
-	else if (mask == 0)
+    
+	if (mask == 0)
 		mask = pRootData->comm_port.mask;
-	else if (gwip == 0)
+    
+	if (gwip == 0)
 		gwip = pRootData->comm_port.gwip;
 
     switch(control_id)
@@ -538,9 +540,11 @@ void HandlePtpEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 cont
 
 	if (ip == 0)
 		ip = pRootData->ptp_port.ip;
-	else if (mask == 0)
+    
+	if (mask == 0)
 		mask = pRootData->ptp_port.mask;
-	else if (gwip == 0)
+    
+	if (gwip == 0)
 		gwip = pRootData->ptp_port.gwip;
 
     switch(control_id)
@@ -613,9 +617,11 @@ void HandleNtpEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 cont
 
 	if (ip == 0)
 		ip = pRootData->ntp_port.ip;
-	else if (mask == 0)
+    
+	if (mask == 0)
 		mask = pRootData->ntp_port.mask;
-	else if (gwip == 0)
+    
+	if (gwip == 0)
 		gwip = pRootData->ntp_port.gwip;
     switch(control_id)
     {
@@ -752,9 +758,11 @@ void HandleClockStatusState(struct root_data *pRootData,Uint16 screen_id, Uint16
 
 	if (serverip_ptp == 0)
 		serverip_ptp = pRootData->slot_list->pPtpSetcfg->serverList[0].serverIp;
-	else if (serverip_ntp == 0)
+    
+	if (serverip_ntp == 0)
 		serverip_ntp = pRootData->ntp_ref_server_ip;
-	else if (ref_type_ntp == 0)
+    
+	if (ref_type_ntp == 0)
 		ref_type_ntp = pRootData->ntp_ref_interval;
 
     switch(control_id)

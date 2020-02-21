@@ -118,7 +118,6 @@ Uint8 *mmapping()
 	}
     close(fd);
 
-	 //pMapped_add = (char *)malloc(1024 * 2);
     return pMapped_add;
 }
 
@@ -324,8 +323,6 @@ void SetRbClockAlign_Once()
 {
 	Uint32 offset;
 	int flag;
-
-    syslog(CLOG_DEBUG,"SetRbClockAlign_Once\r\n");
     
 	offset = *(Uint32*)(BASE_ADDR + 0x10);
 	if(offset&0x80000000)

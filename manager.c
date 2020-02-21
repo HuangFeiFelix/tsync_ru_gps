@@ -1214,16 +1214,16 @@ void SetNetworkToEnv(struct NetInfor *infopt)
 
     SetIpAddress(infopt->ifaceName,infopt->ip);
     SetMaskAddress(infopt->ifaceName,infopt->mask);
-
-    SetGateWay(infopt->ifaceName,infopt->ip,infopt->gwip);
+    usleep(2000);
+    SetGateWay(infopt->ifaceName,infopt->ip,infopt->mask,infopt->gwip);
 }
 
 void SetCmdNetworkToEnv(struct NetInfor *infopt)
 {
     SetIpAddress(infopt->ifaceName,infopt->ip);
     SetMaskAddress(infopt->ifaceName,infopt->mask);
-    
-    SetGateWay(infopt->ifaceName,infopt->ip,infopt->gwip);
+    usleep(2000);
+    SetGateWay(infopt->ifaceName,infopt->ip,infopt->mask,infopt->gwip);
 
 }
 
@@ -1430,13 +1430,13 @@ int Load_sys_configration(char *cfg,struct root_data *pRootData)
             memcpy(ip_address,pIndex,strlen(pIndex));
 
         }
-        /**~{;qH!2N?<T4PEO"~}  */
+        /** */
         if(strcmp("REF",tile) == 0)
         {
             pClockInfo->ref_type = *pIndex - '0';
             printf("load ref_type=%d\n",pClockInfo->ref_type);
         }
-        /** ~{6AH!1>5XJ1VSee~}RB ~{;r~}OCXO */
+        /**OCXO */
         if(strcmp("CLOCK",tile) == 0)
         {
             pClockInfo->clock_mode = *pIndex - '0';
@@ -1559,7 +1559,6 @@ int Load_NetWorkParam_FromFile(char *network_cfg,struct NetInfor *infopt)
         printf("can not find network.conf file\n");
         Get_Net_FormSysEvn(infopt);
         SaveNetParamToFile(network_cfg,infopt);
-        //SetRouteToEnv(network_cfg,infopt);
         return -1;
     }
     
@@ -3891,7 +3890,7 @@ void handle_ptp_data_message(struct root_data *pRootData,char *buf,int len)
     struct PtpReferenceData *pPtpRefData;
     static short  secErrorCnt = 0;
 	static short  secNanoCnt = 0;
-    Slonglong64 time_offset;        /**~{J1<dF+2n~}  */ 
+    Slonglong64 time_offset;  
     int ph;
     
     if(pClockInfo->ref_type ==  REF_SATLITE)
@@ -3922,7 +3921,6 @@ void handle_ptp_data_message(struct root_data *pRootData,char *buf,int len)
                     printf("=========adjust=1====\n");
                     time_offset += pClockInfo->delay_add;
 					SetFpgaAdjustPhase(-time_offset);
-					return;
 				}
 			}
 			else
@@ -3951,7 +3949,6 @@ void handle_ptp_data_message(struct root_data *pRootData,char *buf,int len)
             if(secErrorCnt>10)
             {
                 printf("=========setFpgaTime=====\n");
-                /**~{P4OBR;Ck5DV5~}fgpa ~{DZ2?4&@m~}  */
                 SetFpgaTime(pPtpRefData->currentTime.seconds);
                 secErrorCnt = 0;
             }

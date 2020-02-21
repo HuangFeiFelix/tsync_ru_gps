@@ -180,7 +180,7 @@ extern void gps_status_machine(struct clock_info *p_clock_info,char ref_status);
 
 extern void gps_status_handle(struct clock_info *p_clock_info);
 
-extern void ClockStateProcess(struct clock_info *pClockInfo);
+extern void ClockStateProcess_RB(struct clock_info *pClockInfo);
 extern void ClockHandleProcess(struct clock_info *pClockInfo);
 extern void Init_RbClockCenter(struct clock_info *pClock_info);
 

@@ -289,9 +289,10 @@ void InitConfigration(struct root_data *pRootData)
     strcpy(pRootData->ptp_port.ifaceName,"eth0");
     strcpy(pRootData->ntp_port.ifaceName,"eth1");
     strcpy(pRootData->comm_port.ifaceName,"eth2");
-    Load_NetWorkParam_FromFile(ctlEthConfig,&pRootData->comm_port);
-    Load_NetWorkParam_FromFile(ntpEthConfig,&pRootData->ntp_port);
+    
     Load_NetWorkParam_FromFile(ptpEthConfig,&pRootData->ptp_port);
+    Load_NetWorkParam_FromFile(ntpEthConfig,&pRootData->ntp_port);
+    Load_NetWorkParam_FromFile(ctlEthConfig,&pRootData->comm_port);
 
     Load_sys_configration(commSysConfig,pRootData);
 	Load_Supervision_FromFile(supervisionConfig, &pRootData->supervision);
@@ -302,12 +303,11 @@ void InitDev(struct root_data *pRootData)
 {    
     init_dev_head(&pRootData->dev_head);
     
-    /**³õÊ¼»¯UI Éè±¸ ,UIÉè±¸Í¨¹ý´®¿ÚÍ¨ÐÅid =0*/
-#if 1
-    pRootData->dev[ENUM_LCD].com_attr.com_port = ENUM_LCD;  //´®¿Ú1
+    /**ENUM_LCD for LCD device, id =0*/
+    pRootData->dev[ENUM_LCD].com_attr.com_port = ENUM_LCD; 
     pRootData->dev[ENUM_LCD].com_attr.baud_rate = 9600;
     init_add_dev(&pRootData->dev[ENUM_LCD],&pRootData->dev_head,COMM_DEVICE,ENUM_LCD);
-#endif
+
 
 #if 0
     pRootData->dev[ENUM_XO].com_attr.com_port = ENUM_XO;  //´®¿Ú2
@@ -316,41 +316,32 @@ void InitDev(struct root_data *pRootData)
 #endif
 
 
-    /**½ÓÊÕ»ú´®¿ÚÉè±¸ Í¨ÐÅid=2  */
-    pRootData->dev[ENUM_GPS].com_attr.com_port = ENUM_GPS;  //´®¿Ú1
+    /**ENUM_GPS for gps device id=1  */
+    pRootData->dev[ENUM_GPS].com_attr.com_port = ENUM_GPS;
     pRootData->dev[ENUM_GPS].com_attr.baud_rate = 9600;
     init_add_dev(&pRootData->dev[ENUM_GPS],&pRootData->dev_head,COMM_DEVICE,ENUM_GPS);
     
-#if 1
-    //ÖÓ¿Ø´®¿Ú£¬¿ØÖÆÖÓ¿Ø
+    /**ENUM_RB for RB clock ,device id=2  */
     pRootData->dev[ENUM_RB].com_attr.com_port = ENUM_RB;   
     pRootData->dev[ENUM_RB].com_attr.baud_rate = 9600;
     init_add_dev(&pRootData->dev[ENUM_RB],&pRootData->dev_head,COMM_DEVICE,ENUM_RB);
-#endif
 
+    //pRootData->dev[ENUM_PC_CTL].net_attr.sin_port = pRootData->ctl_sin_port;//
+    //pRootData->dev[ENUM_PC_CTL].net_attr.ip = inet_addr(pRootData->ctl_ip_address);
+    //init_add_dev(&pRootData->dev[ENUM_PC_CTL],&pRootData->dev_head,UDP_DEVICE,ENUM_PC_CTL);
 
-#if 0
-   pRootData->dev[ENUM_PC_DISCOVER].net_attr.sin_port = pRootData->comm_port;  //
-   pRootData->dev[ENUM_PC_DISCOVER].net_attr.ip = ip;
-   init_add_dev(&pRootData->dev[ENUM_PC_DISCOVER],&pRootData->dev_head,UDP_DEVICE,ENUM_PC_DISCOVER);
-#endif
-   
-   pRootData->dev[ENUM_PC_CTL].net_attr.sin_port = pRootData->ctl_sin_port;//
-   pRootData->dev[ENUM_PC_CTL].net_attr.ip = inet_addr(pRootData->ctl_ip_address);
-   init_add_dev(&pRootData->dev[ENUM_PC_CTL],&pRootData->dev_head,UDP_DEVICE,ENUM_PC_CTL);
-
-    /**±¾µØPTP   */
+    /**ENUM_IPC_PTP_MASTER for  PTP master, IPC communication  */
     pRootData->dev[ENUM_IPC_PTP_MASTER].net_attr.sin_port = 9900;
     pRootData->dev[ENUM_IPC_PTP_MASTER].net_attr.ip = inet_addr("127.0.0.1");
 
+    /**ENUM_IPC_PTP_SLAVE for  PTP slave, IPC communication  */
     pRootData->dev[ENUM_IPC_PTP_SLAVE].net_attr.sin_port = 9901;
     pRootData->dev[ENUM_IPC_PTP_SLAVE].net_attr.ip = inet_addr("127.0.0.1");
     
-    //if(pRootData->clock_info.ref_type == REF_SATLITE)
     init_add_dev(&pRootData->dev[ENUM_IPC_PTP_MASTER],&pRootData->dev_head,INIT_DEVICE,ENUM_IPC_PTP_MASTER);
-    //else if(pRootData->clock_info.ref_type == REF_PTP)
     init_add_dev(&pRootData->dev[ENUM_IPC_PTP_SLAVE],&pRootData->dev_head,UDP_DEVICE,ENUM_IPC_PTP_SLAVE);
     
+    /**ENUM_IPC_NTP for  ntp, IPC communication  */
     pRootData->dev[ENUM_IPC_NTP].net_attr.sin_port = 9988;
     pRootData->dev[ENUM_IPC_NTP].net_attr.ip = inet_addr("127.0.0.1");
     init_add_dev(&pRootData->dev[ENUM_IPC_NTP],&pRootData->dev_head,UDP_DEVICE,ENUM_IPC_NTP);
@@ -372,26 +363,24 @@ void *DataHandle_Thread(void *arg)
 	while(1)
     {
 		sem_wait(&p_dev_head->sem[0]);
-        //±éÀúÉè±¸Á´±í
 		list_for_each_entry(p_dev,&p_dev_head->list_head,list_head)	
 		{
-            //±éÀúÊý¾Ý½ÓÊÕÁ´±í
 			list_for_each_entry_safe(p_data_list,tmp_data_list,&p_dev->data_head[0].list_head,list_head)
 			{
 				switch (p_dev->dev_id)
                 {
     				case ENUM_BUS:
                         
-#if 0
+                        #if 0
                         for(i=0;i<p_data_list->recv_lev.len;i++)
                             printf("%d ",p_data_list->recv_lev.data[i]);
                         printf("\n");           
                         ProcessUiData(pRoot,&p_data_list->recv_lev);
-#endif
+                        #endif
     					break;
                     case ENUM_LCD:
                          //printf("dev_id=  %d,com1\n",p_dev->dev_id);
-                         ProcessLcdMessage(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
+                        ProcessLcdMessage(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
                         break;
     				case ENUM_GPS:
                         //printf("dev_id=  %d,com1:receive:%s",p_dev->dev_id,p_data_list->recv_lev.data);
@@ -409,14 +398,12 @@ void *DataHandle_Thread(void *arg)
     				case ENUM_PC_CTL:					
 
                         printf("handle UDP pc_ctl_message %d\n",p_dev->dev_id);
-
-                        handle_pc_ctl_message(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
-
+                        //handle_pc_ctl_message(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
 
                         break;
                     case ENUM_PC_DISCOVER:
                         printf("handle discovery %d\n",p_dev->dev_id);
-                        handle_discovery_message(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
+                        //handle_discovery_message(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
                         break;
     				case ENUM_LOCAL_DEV:
     					
@@ -458,7 +445,6 @@ void *DataRecv_Thread(void *arg){
         }
         else if(ret)
         {
-            //±éÀúÉè±¸Á´±í
             list_for_each_entry_safe(p_dev,tmp_dev,&p_dev_head->list_head,list_head)    
                 p_dev->recv_data(p_dev, p_dev_head);
 
@@ -466,7 +452,7 @@ void *DataRecv_Thread(void *arg){
         else
         {
             printf("select time out\n");
-            }
+        }
         
 	}
 	return NULL ;
@@ -483,9 +469,9 @@ void *DataSend_Thread(void *arg) {
 	while(1)
     {
 		sem_wait(&p_dev_head->sem[1]);
-		list_for_each_entry(p_dev,&p_dev_head->list_head,list_head)		//±éÀúÉè±¸Á´±í
+		list_for_each_entry(p_dev,&p_dev_head->list_head,list_head)		
 		{
-            list_for_each_entry_safe(p_data_list,tmp_data_list,&p_dev->data_head[1].list_head,list_head)    //±éÀúÊý¾Ý·¢ËÍÁ´±í
+            list_for_each_entry_safe(p_data_list,tmp_data_list,&p_dev->data_head[1].list_head,list_head)
             {
                 
                 if(p_dev->type == UDP_DEVICE)
@@ -561,7 +547,6 @@ static void Pps_Signal_Handle(int signum)
             collect_phase(&pClock_info->data_1Hz,0,phaseOffset);      
     }
 
-     /**·ÇÊµÊ±ÐÔÒªÇó´¦Àí  */
     g_RootData->flag_usuallyRoutine = TRUE;
 }
 
@@ -596,13 +581,10 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
     struct timeval tv;
 	
     static Uint32 previousBusSec = 0;
-
     Uint32 ntp_second_from_1970 =0;
     Uint32 Time = 0;
-
     static short  secErrorCnt = 0;
     static short  ntpsecErrorCnt = 0;
-
     static unsigned short modify_internal = 0;
 
     Uint32 fpga_ntp_second_from_1970 =0;
@@ -613,7 +595,6 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
     if((pClockInfo->ref_type ==  REF_SATLITE))
     {
         //printf("PPS TIme:%d, leap:%d\n",pSateData->time,pSateData->gps_utc_leaps);
-        /**ÎÀÐÇÏÂÀ´ÊÇutcÊ±¼ä²¹³äÈòÃë  */
         if(pClockInfo->pps_work == 0)
         {
             printf("GPS TIme:%d, leap:%d\n",pSateData->time+1,pSateData->gps_utc_leaps);
@@ -647,10 +628,7 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
 	else
 		Time= ptptTime->seconds;
 	
-	ntp_second_from_1970 = ioctl(fd,COMM_GET_SEC,0);
-
-
-    /** ÏÔÊ¾µ±Ç°Ê±¼ä£¬±±¾©Ê±¼ä */   
+   ntp_second_from_1970 = ioctl(fd,COMM_GET_SEC,0);
    current_time = ntp_second_from_1970;
    current_time += 28800;
    tm = gmtime(&current_time);
@@ -658,7 +636,6 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
    sprintf(pRoot->current_time,"%d-%d-%d %02d:%02d:%02d",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec);
    printf("%s\n",pRoot->current_time);
 
-    /**Á¬ÐøÐÔÅÐ¶Ï  */
     if(abs(Time - previousBusSec) != 1)
     {
         printf("-------1------\n");
@@ -667,7 +644,6 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
     }
     previousBusSec = Time;
 
-    /**Ê±¼äÁ¬Ðø10s ¶¼²»ÏàÍ¬  */
     if(ptptTime->seconds != Time)
     {
         printf("------2-------\n");
@@ -675,7 +651,6 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
         if(secErrorCnt>5)
         {
             syslog(CLOG_DEBUG,"setFpgaTime=%d\n",Time);
-            /**Ð´ÏÂÒ»ÃëµÄÖµfgpa ÄÚ²¿´¦Àí  */
             SetFpgaTime(Time);
             secErrorCnt = 0;
         }
@@ -683,7 +658,6 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
     else if(ptptTime->seconds == Time)
         secErrorCnt = 0;
 
-    /**Ê¹ÓÃ±¾µØptpÊ±¼ä£¬·ÀÖ¹±³°å³ö´íÊ±£¬Ê±¼ä³öÎÊÌâ  */
     fpga_ntp_second_from_1970 = Time - pSateData->gps_utc_leaps;
     fpga_ntp_second_from_1970 -= 19;
     
@@ -691,7 +665,7 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
         ,ntp_second_from_1970
         ,fpga_ntp_second_from_1970);
 
-    /**ntp Ê±¼ä¸úÐÂÏµÍ³Ê±¼äÓÃÓÚntpd  */
+    /**ntp do not == fgpa time (hardware time from RB clock)  */
     if(ntp_second_from_1970 != fpga_ntp_second_from_1970)
     {
         ntpsecErrorCnt++;
@@ -699,8 +673,6 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
         {
             printf("------5-------\n");
             ioctl(fd,COMM_SET_SEC,fpga_ntp_second_from_1970);
-
-				// µµ²Î¿¼Ô´ÎªntpµÄÊ±ºò£¬²»ÐèÒªÔÙµ÷ÏµÍ³Ê±¼ä
             ioctl(fd,COMM_MODIFY_SEC,1);
             syslog(CLOG_DEBUG,"set systemtime-5-");
 
@@ -850,7 +822,7 @@ void display_clockstate_to_lcd(struct root_data *pRootData)
 
 void display_lcd_running_status(struct root_data *pRootData)
 {
-	char szbuf[50];
+	char szbuf[100];
 	int pRun_Day = 0;
 	int pRun_Hour = 0;
 	int pRun_Minute = 0;
@@ -906,85 +878,13 @@ void display_alarm_information(struct clock_alarm_data *pClockAlarm)
         ,pClockAlarm->alarmDisk);
 }
 
-void updateNtpStatus(struct root_data *pRootData,Uint16 nTimeCnt)
-{
-    struct clock_info *pClockInfo = &pRootData->clock_info;
-    struct Satellite_Data *pSateData = &pRootData->satellite_data;     
-    struct NtpdStatus mNtpStatus;
-    
-    if(nTimeCnt%8 == 0)
-    {
-        memset(&mNtpStatus,0,sizeof(mNtpStatus));
-        switch(pClockInfo->workStatus)
-        {
-            case 0:
-                memcpy(mNtpStatus.refid,"LOC",strlen("LOC"));
-                mNtpStatus.stratum = 1;
-                mNtpStatus.leap = LEAP_NOWARNING;
-                mNtpStatus.precision = STRATUM_3_PRESION;
-
-                break;
-            case 1:
-                if(pClockInfo->ref_type == REF_SATLITE)
-                {
-                    memcpy(mNtpStatus.refid,"BD",strlen("BD"));
-                    mNtpStatus.stratum = 0;
-                    mNtpStatus.leap = LEAP_NOWARNING;
-                    mNtpStatus.precision = STRATUM_2_PRESION;
-
-                }
-                else
-                {
-                    memcpy(mNtpStatus.refid,"REF",strlen("REF"));
-                    mNtpStatus.stratum = 0;
-                    mNtpStatus.leap = LEAP_NOWARNING;
-                    mNtpStatus.precision = STRATUM_2_PRESION;
-
-                }
-                break;
-            case 2:
-                if(pClockInfo->ref_type == REF_SATLITE)
-                {
-                    memcpy(mNtpStatus.refid,"BD",strlen("BD"));
-                    mNtpStatus.stratum = 0;
-                    mNtpStatus.leap = LEAP_NOWARNING;
-                    mNtpStatus.precision = STRATUM_1_PRESION;
-
-                }
-                else
-                {
-                    memcpy(mNtpStatus.refid,"REF",strlen("REF"));
-                    mNtpStatus.stratum = 0;
-                    mNtpStatus.leap = LEAP_NOWARNING;
-                    mNtpStatus.precision = STRATUM_1_PRESION;
-
-                }   
-                break;
-            case 3:
-                memcpy(mNtpStatus.refid,"LOC",strlen("LOC"));
-                mNtpStatus.stratum = 0;
-                mNtpStatus.leap = LEAP_NOWARNING;
-                mNtpStatus.precision = STRATUM_3_PRESION;
-
-                break;
-           default:
-                break;
-        }
-
-        AddData_ToSendList(pRootData,ENUM_IPC_NTP,(void *)&mNtpStatus,sizeof(mNtpStatus));
-
-    }
-     
-}
-
-
 void updatePtpStatus(struct root_data *pRootData,Uint16 nTimeCnt)
 {
     struct clock_info *pClockInfo = &pRootData->clock_info;
     struct Satellite_Data *pSateData = &pRootData->satellite_data;     
     struct PtpStatus mPtpStatus;
 
-    if(nTimeCnt%6 == 0)
+    if(nTimeCnt%10 == 0)
     {
         memset(&mPtpStatus,0,sizeof(mPtpStatus));
         switch(pClockInfo->workStatus)
@@ -1064,15 +964,16 @@ void *ThreadUsuallyProcess(void *arg)
 
     while(1)
     {
-        /**1sÖ´ÐÐ£¬  */
+        /**1pps from kernel signal*/
         if(pRootData->flag_usuallyRoutine)
         {
             
             printf("========================1PPS Start ============================\n");
 
+            /**Get hardware time from fpga  */
             GetFpgaPpsTime(&timeTmp); 
 
-            /**ºËÐÄÊ±¼äÎ¬»¤  */
+            /**main core time handle */
             MaintainCoreTime(pRootData,&timeTmp);
 
             CollectAlarm(pRootData);
@@ -1082,16 +983,14 @@ void *ThreadUsuallyProcess(void *arg)
             if(pClockInfo->clock_mode == 1)
                 ClockStateProcess_OCXO(pClockInfo);
             else
-                ClockStateProcess(pClockInfo);
+                ClockStateProcess_RB(pClockInfo);
 
             display_lcd_running_status(pRootData);   
-			
-            //inssue_pps_data(pRootData);
-            
-            /**LED  ´¦Àí*/
+			           
+            /**Running LED Handle */
             Control_LedRun(nTimeCnt%2);
 
-            if(nTimeCnt%1250 == 0)
+            if(nTimeCnt%300 == 0)
                 system("hwclock -w");
             
             if(pClockInfo->ref_type == REF_SATLITE)
@@ -1147,32 +1046,16 @@ void *ThreadUsuallyProcess(void *arg)
 			
 			nTimeCnt++;
             
-			/*
-			printf("\n**************************************************\n");
-			printf("TimeSourceType:%d\n", pSuperVision.TimeSourceType);
-			temsock.sin_addr.s_addr = pSuperVision.NtpServerIP;
-			printf("NtpServerIP:%s\n", inet_ntoa(temsock.sin_addr));
-			printf("HttpReportCycle:%d\n", pSuperVision.HttpReportCycle);
-			temsock.sin_addr.s_addr = pSuperVision.MonitorServerIP;
-			printf("MonitorServerIP:%s\n", inet_ntoa(temsock.sin_addr));
-			printf("MonitorServerPort:%d\n", pSuperVision.MonitorServerPort);
-			printf("MonitorServerPostURL:%s\n", pSuperVision.MonitorPostURL);
-			printf("SystemId:%d\n", pSuperVision.SystemId);
-			printf("Subsystemid:%d\n", pSuperVision.Subsystemid);
-			printf("SystemType:%s\n", pSuperVision.SystemType);
-			printf("\n**************************************************\n");
-            printf("========================1PPS End ============================\n\n\n");
-	*/
             pRootData->flag_usuallyRoutine = FALSE;
         }
 
-        /**²âÊÔÉÏ±¨  */
+        /**Check whether REF time data is connected full */
         if(pClockInfo->clock_mode == 1)
             ClockHandleProcess_OCXO(pClockInfo);
         else
             ClockHandleProcess(pClockInfo);
 
-        usleep(10);
+        usleep(1000);
     }
 
     
@@ -1243,8 +1126,6 @@ void Wait_For_EnvConfig()
     int ret;
     int wait_cnt = 3;
 
-	/*ÓÃÀ´²éÑ¯Éè±¸×´Ì¬£¨¶Á£¬Ð´£¬Òì³££©µÄ¸Ä±ä£¬ÔÚtimeoutÊ±¼äÄÚ*/
-
     printf("\r\nWatting for Env Init finish... :   ");
     fflush(stdout);
     
@@ -1274,7 +1155,7 @@ int main(int argc,char *argv[])
     int c;
     int val;
     printf("Hardware Version V1.00\n");
-    printf("SoftWare Version V0.13\n");
+    printf("SoftWare Version V0.14\n");
     
     g_RootData = (struct root_data *)malloc(sizeof(struct root_data));
 	if (g_RootData == NULL)
@@ -1329,7 +1210,7 @@ int main(int argc,char *argv[])
 
     syslog(CLOG_DEBUG,"tsync deamon starting running\n");
     
-    /** ´´½¨ÈÕ³£´¦ÀíÏß³Ì */
+    /** ThreadUsuallyProcess thread for ususal handle */
 	err = pthread_create(&g_RootData->p_usual,&g_RootData->pattr,(void *)ThreadUsuallyProcess,(void *)g_RootData);	
 	if(err == 0)
 	{
@@ -1341,7 +1222,7 @@ int main(int argc,char *argv[])
 		return FALSE;
 	}
 
-    /**´´½¨Êý¾Ý½ÓÊÕÏß³Ì  */
+    /** DataRecv_Thread thread for recvdata handle */
 	err = pthread_create(&g_RootData->p_recv,&g_RootData->pattr,(void *)DataRecv_Thread,(void *)&g_RootData->dev_head);	
 	if(err == 0)
 	{
@@ -1353,21 +1234,22 @@ int main(int argc,char *argv[])
 		return FALSE;
 	}
 
-    /**´´½¨Êý¾Ý·¢ËÍÏß³Ì  */
-	err = pthread_create(&g_RootData->p_send,&g_RootData->pattr,(void *)DataSend_Thread,(void *)&g_RootData->dev_head);	/*Êý¾Ý·¢ËÍÏß³Ì*/
-	if(err == 0)
-	{
+    /** DataSend_Thread thread for senddata handle */
+	err = pthread_create(&g_RootData->p_send,&g_RootData->pattr,(void *)DataSend_Thread,(void *)&g_RootData->dev_head);
+    if(err == 0)
+    {
 		printf("datasend_pthread succes!\n");
-	}else
+	}
+    else
 	{
 		printf("datasend_pthread error!\n");
 		return FALSE;
 	}
 
-    /**´´½¨Êý¾Ý´¦ÀíÏß³Ì  */
-	err = pthread_create(&g_RootData->p_handle,&g_RootData->pattr,(void *)DataHandle_Thread,(void *)g_RootData);/*Êý¾Ý´¦ÀíÏß³Ì*/
-	if(err == 0)
-	{
+    /** DataSend_Thread thread for data process handle */
+	err = pthread_create(&g_RootData->p_handle,&g_RootData->pattr,(void *)DataHandle_Thread,(void *)g_RootData);
+    if(err == 0)
+    {
 		printf("datahandle_pthread succes!\n");
 	}else
 	{

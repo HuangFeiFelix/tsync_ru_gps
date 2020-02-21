@@ -546,7 +546,7 @@ int open_dev(struct device *p_dev, struct dev_head *dev_head)
 
 		dev_rwlock[i] = (pthread_rwlock_t *) malloc(sizeof(pthread_rwlock_t));
 		pthread_rwlock_init(dev_rwlock[i], NULL );
-		init_data_head(&p_dev->data_head[i], i + 1, dev_rwlock[i]);
+		init_data_head(&p_dev->data_head[i], i, dev_rwlock[i]);
 	}
 
 	for (i = 0;i < 2;i ++)
@@ -605,12 +605,12 @@ int recv_net_data(struct device *p_dev, struct dev_head *dev_head)
 			perror("accept error\n");
 			return FALSE ;
 		}
-		add_net(client_fd, &client_sockaddr, p_dev);//й¶
+		add_net(client_fd, &client_sockaddr, p_dev);
 		FD_SET(client_fd, &dev_head->fd_set);
 		if (client_fd > dev_head->max_fd)
 			dev_head->max_fd = client_fd;
 	} else {
-		list_for_each_entry_safe(p_data_list,tmp_data_list,&p_dev->data_head[2].list_head,list_head)
+		list_for_each_entry_safe(p_data_list,tmp_data_list,&p_dev->data_head[0].list_head,list_head)
 		{
 			client_fd = p_data_list->net_lev.fd;
 			if (FD_ISSET(client_fd,&dev_head->tmp_set) > 0)
@@ -623,7 +623,7 @@ int recv_net_data(struct device *p_dev, struct dev_head *dev_head)
 				{
 					close(client_fd);
 					FD_CLR(client_fd, &dev_head->fd_set);
-					del_data(p_data_list, &p_dev->data_head[2], p_dev);
+					del_data(p_data_list, &p_dev->data_head[0], p_dev);
 				}
 			}
 		}

@@ -912,7 +912,6 @@ void ntp_status_machine(struct clock_info *p_clock_info,char ref_status)
                p_clock_info->workStatus=HOLD; 
             else if((ref_status==1)&&(p_clock_info->fast_times>=300))
 			{
-               system("hwclock -w");
                p_clock_info->workStatus=LOCK;
 			   p_clock_info->unlockCounter=0;
 			 }
@@ -926,7 +925,10 @@ void ntp_status_machine(struct clock_info *p_clock_info,char ref_status)
              p_clock_info->lock_times++;/*Ëø¶¨ÓÃÊ±*/
              
              if(p_clock_info->lock_times % 3600 == 0)
-                system("hwclock -w");
+             {
+                 system("hwclock -w");
+
+             }
          }
       		break;
      	case HOLD:	
@@ -1325,7 +1327,7 @@ void ptp_status_handle(struct clock_info *p_clock_info)
 }
 
 
-void ClockStateProcess(struct clock_info *pClockInfo)
+void ClockStateProcess_RB(struct clock_info *pClockInfo)
 {
     struct clock_alarm_data *pAlarmData = &pClockInfo->alarmData;
     Uint8 ref_status;
@@ -1377,7 +1379,7 @@ void ClockStateProcess(struct clock_info *pClockInfo)
          pClockInfo->data_1Hz.queue_number_counter=0;
          pClockInfo->data_1Hz.start_flag = 1;
          
-         printf("--------REF_PTP start control rb\r\n");
+         printf("--------REF_NTP start control rb\r\n");
 
     }
     if(tmp_ref != pClockInfo->ref_type)
