@@ -230,14 +230,19 @@ void add_uart_lcd(struct uart_buf *pUart, unsigned char data)
     else if (data == 0xFF && last_data == 0xFF)
 	{
 		pUart->flags = 0x10;
-		pUart->buf[pUart->cur++] = data;
-		pUart->buf[pUart->cur++] = '\0';
+
+        pUart->buf[pUart->cur++] = data;
+        pUart->buf[pUart->cur++] = '\0';
+
   	}
     
 	if (pUart->flags == 0x01)
 	{
-		pUart->buf[pUart->cur++] = data;
-        //printf("cur %x\n",pUart->buf[pUart->cur-1]);
+
+        if(pUart->cur < 1022)
+        {
+            pUart->buf[pUart->cur++] = data;
+        }
     }
 
     last_data = data;
@@ -289,7 +294,11 @@ void add_uart_gps(struct uart_buf *pUart, char data)
     
 	if (pUart->flags == 0x01)
 	{
-		pUart->buf[pUart->cur++] = data;
+		
+        if(pUart->cur < 1022)
+        {
+            pUart->buf[pUart->cur++] = data;
+        }
         //printf("cur %x\n",pUart->buf[pUart->cur-1]);
     }
 
@@ -311,7 +320,10 @@ void add_uart_rb(struct uart_buf *pUart, char data)
   	}
 	else if (pUart->flags == 0x00)
 	{
-		pUart->buf[pUart->cur++] = data;
+		if(pUart->cur < 1022)
+        {
+            pUart->buf[pUart->cur++] = data;
+        }
         //printf("cur %x \n",pUart->buf[pUart->cur-1]);
     }
 

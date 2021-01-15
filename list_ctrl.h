@@ -15,7 +15,7 @@
 
 #define MAX_COM_NUM			5
 
-#define UART_BUF_SIZE 	    512
+#define UART_BUF_SIZE 	    1024
 #define UART_LEN 			1
 
 #define PROTOCOL 0

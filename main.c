@@ -434,7 +434,7 @@ void *DataRecv_Thread(void *arg){
  
 	while(1)
     {
-        timeout.tv_sec=2;   
+        timeout.tv_sec=1;   
         timeout.tv_usec=0;  
 		p_dev_head->tmp_set = p_dev_head->fd_set;
         
@@ -1155,7 +1155,7 @@ int main(int argc,char *argv[])
     int c;
     int val;
     printf("Hardware Version V1.00\n");
-    printf("SoftWare Version V0.14\n");
+    printf("SoftWare Version V0.15\n");
     
     g_RootData = (struct root_data *)malloc(sizeof(struct root_data));
 	if (g_RootData == NULL)
