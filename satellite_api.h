@@ -34,6 +34,7 @@ struct Satellite_Data
     short latitude_m;
     int   height;    
     
+    Uint8 core_calibrate_flag;
 };
 
 char Gga(struct Satellite_Data *p_satellite_data,char *str);

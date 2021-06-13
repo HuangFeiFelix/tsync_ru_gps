@@ -82,11 +82,13 @@ int String2Bytes(unsigned char* szSrc, unsigned char* pDst, int nDstMaxLen)
 }   
 
 
-void AddData_ToSendList(struct root_data *pRoot,char devType,void *buf,int len)
+void AddData_ToSendList(struct root_data *pRoot,char devType,void *buf,short len)
 {
-    add_send(&pRoot->dev_head,&pRoot->dev[devType],buf,len);
+    if(ENUM_LCD == devType)
+           write(pRoot->dev[devType].fd, buf, len);
+       else
+           add_send(buf,len,&pRoot->dev[devType]);
 }
-
 
 char setzda[100] = {"B5 62 06 01 08 00 F0 08 00 01 00 00 00 00 08 60"};
 char pubx[100] =   {"B5 62 06 01 08 00 F1 04 00 01 00 00 00 00 05 4C"};
@@ -109,6 +111,8 @@ void Init_ublox(struct root_data *pRootData)
     AddData_ToSendList(pRootData,ENUM_XO,txbuf,5);
 
 
+
+
 	memset(txbuf,0,sizeof(txbuf));
 	memset(txbufBin,0,sizeof(txbufBin));
 
@@ -124,7 +128,6 @@ void Init_ublox(struct root_data *pRootData)
 
 	AddData_ToSendList(pRootData,ENUM_GPS,txbufBin,txlen);
 #endif
-
 
 	memset(txbuf,0,sizeof(txbuf));
 	memset(txbufBin,0,sizeof(txbufBin));
@@ -356,23 +359,18 @@ void *DataHandle_Thread(void *arg)
 	struct root_data *pRootData = (struct root_data *)arg;
 	struct dev_head *p_dev_head = NULL;
 	struct device *p_dev = NULL;
+	struct data_list *p_data_list = NULL, *tmp_data_list = NULL;
 	p_dev_head = (struct dev_head *)&pRootData->dev_head;
-    Uint8 buffer[BUFFER_SIZE];
-    Uint16 q_size = 0;
-    int len = 0;
-    int dev_id;
-    
+
+    int i;
 	while(1)
     {
-
-        memset(buffer,0,BUFFER_SIZE);
-        
-        q_size  = dev_queue_size(&p_dev_head->recv_queue);
-        if(q_size > 0)
-        {
-            if(dev_queue_pop(&p_dev_head->recv_queue,buffer,&len,&dev_id) == TRUE)
-            {
-                switch (dev_id)
+		sem_wait(&p_dev_head->sem[0]);
+		list_for_each_entry(p_dev,&p_dev_head->list_head,list_head)	
+		{
+			list_for_each_entry_safe(p_data_list,tmp_data_list,&p_dev->data_head[0].list_head,list_head)
+			{
+				switch (p_dev->dev_id)
                 {
     				case ENUM_BUS:
                         
@@ -385,29 +383,29 @@ void *DataHandle_Thread(void *arg)
     					break;
                     case ENUM_LCD:
                          //printf("dev_id=  %d,com1\n",p_dev->dev_id);
-                        ProcessLcdMessage(pRootData,buffer,len);
+                        ProcessLcdMessage(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
                         break;
     				case ENUM_GPS:
-                        //printf("gps receive:%s",buffer);
-                        SatelliteHandle(&pRootData->satellite_data,buffer);
+                        //printf("dev_id=  %d,com1:receive:%s",p_dev->dev_id,p_data_list->recv_lev.data);
+                        SatelliteHandle(&pRootData->satellite_data,p_data_list->recv_lev.data);
     					break;
     				case ENUM_RB:
                         
-    					printf("dev_id=  %d,com2:receive:%s\n",dev_id,buffer);
+    					printf("dev_id=  %d,com2:receive:%s\n",p_dev->dev_id,p_data_list->recv_lev.data);
                         
                         break;
                     case ENUM_XO:
-                        printf("dev_id=  %d,com2:receive:%s\n",dev_id,buffer);
+                        printf("dev_id=  %d,com2:receive:%s\n",p_dev->dev_id,p_data_list->recv_lev.data);
                         
                         break;
     				case ENUM_PC_CTL:					
 
-                        printf("handle UDP pc_ctl_message %d\n",dev_id);
+                        printf("handle UDP pc_ctl_message %d\n",p_dev->dev_id);
                         //handle_pc_ctl_message(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
 
                         break;
                     case ENUM_PC_DISCOVER:
-                        printf("handle discovery %d\n",dev_id);
+                        printf("handle discovery %d\n",p_dev->dev_id);
                         //handle_discovery_message(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
                         break;
     				case ENUM_LOCAL_DEV:
@@ -415,42 +413,32 @@ void *DataHandle_Thread(void *arg)
     					break;
                     case ENUM_IPC_NTP:
                         //printf("ENUM_IPC_NTP %d\n",p_dev->dev_id);
-						handle_ntp_data_message(pRootData,buffer,len);
+						handle_ntp_data_message(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
                         break; 
                     case ENUM_IPC_PTP_SLAVE:
                         //printf("handle_ptp_data_message dev_id=  %d,ptp recv\n",p_dev->dev_id);
-                        handle_ptp_data_message(pRootData,buffer,len);
+                        handle_ptp_data_message(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
                         break;
     				default:
     					break;
 				}
-
-            }
-            
-        }
-        else
-        {
-            usleep(100);
-        }
-        
+				del_data(p_data_list, &p_dev->data_head[0], p_dev);
+			}
+		}
 	}
-
-    return NULL;
+	return NULL;
 }
-
-
  
 void *DataRecv_Thread(void *arg){
 	struct device *p_dev = NULL, *tmp_dev = NULL;
 	struct dev_head *p_dev_head = (struct dev_head *)arg;
     short ret;
     struct   timeval   timeout;   
-    int i;
-    
+ 
 	while(1)
     {
-        timeout.tv_sec=0;   
-        timeout.tv_usec=100;  
+        timeout.tv_sec=1;   
+        timeout.tv_usec=0;  
 		p_dev_head->tmp_set = p_dev_head->fd_set;
         
         ret = select(p_dev_head->max_fd + 1,&p_dev_head->tmp_set, NULL, NULL,&timeout);
@@ -460,18 +448,13 @@ void *DataRecv_Thread(void *arg){
         }
         else if(ret)
         {
-            for(i = 0; i< DEV_COUNT;i++)
-            {
-                p_dev = &g_RootData->dev[i];
-                if(p_dev->valid == TRUE  && (p_dev->recv_data != NULL))
-                {
-                    p_dev->recv_data(p_dev, p_dev_head);
-                }
-            }
+            list_for_each_entry_safe(p_dev,tmp_dev,&p_dev_head->list_head,list_head)    
+                p_dev->recv_data(p_dev, p_dev_head);
+
         }
         else
         {
-            //printf("select time out\n");
+            printf("select time out\n");
         }
         
 	}
@@ -482,60 +465,65 @@ void *DataRecv_Thread(void *arg){
 
 
 void *DataSend_Thread(void *arg) {
-
-    struct root_data *pRootData = (struct root_data *)arg;
-    struct dev_head *p_dev_head = NULL;
-    struct device *p_dev = NULL;
-    p_dev_head = (struct dev_head *)&pRootData->dev_head;
-
-    int fd = -1, len = 0, count = 0;
-    Uint16 q_size =0;
-    Uint8 buffer[BUFFER_SIZE];
-    int dev_id =0;
-
+	int fd = -1, len = 0, count = 0;
+	struct device *p_dev = NULL;
+	struct data_list *p_data_list = NULL, *tmp_data_list = NULL, *p_net_data =NULL;
+	struct dev_head *p_dev_head = (struct dev_head *) arg;
 	while(1)
     {
-        memset(buffer,0,BUFFER_SIZE);
-        
-        q_size  = dev_queue_size(&p_dev_head->send_queue);
-        if(q_size > 0)
-        {
-            if(dev_queue_pop(&p_dev_head->send_queue,buffer,&len,&dev_id) == TRUE)
+		sem_wait(&p_dev_head->sem[1]);
+		list_for_each_entry(p_dev,&p_dev_head->list_head,list_head)		
+		{
+            list_for_each_entry_safe(p_data_list,tmp_data_list,&p_dev->data_head[1].list_head,list_head)
             {
-                p_dev = &pRootData->dev[dev_id];
-                switch(p_dev->type)
+                
+                if(p_dev->type == UDP_DEVICE)
                 {
-                    case UDP_DEVICE:
-                        count = sendto(p_dev->fd,buffer,len,0,(struct sockaddr *)&p_dev->dest_addr,sizeof(struct sockaddr_in));
-                        break;
-                    case TCP_DEVICE:
-                        
-                        count = send(p_dev->fd, buffer, len,0);
-                        break;
-                    case COMM_DEVICE:
-                        
-                        count = write(p_dev->fd, buffer, len);
-                        break;
-                    case INIT_DEVICE:
 
-                        count = sendto(p_dev->fd,buffer,len,0,(struct sockaddr *)&p_dev->dest_addr,sizeof(struct sockaddr_in));
-                        break;
-                    default:
+                    len = p_data_list->send_lev.len;
+                    count = sendto(p_dev->fd,p_data_list->send_lev.data,len,0,(struct sockaddr *)&p_dev->dest_addr,sizeof(struct sockaddr_in));
                     
-                        count = write(p_dev->fd, buffer, len);
-                        break;
+                    del_data(p_data_list, &p_dev->data_head[1],p_dev);
+                }
+                else if(p_dev->type == TCP_DEVICE)
+                {
+                    len = p_data_list->send_lev.len;
+                    count = send(p_dev->fd, p_data_list->send_lev.data, len,0);
+                    
+                    del_data(p_data_list, &p_dev->data_head[1], p_dev);
+
+                }
+                else if(p_dev->type == COMM_DEVICE)
+                {
+                    len = p_data_list->send_lev.len;
+                    //printf("send =%d %x \n",len,p_data_list->send_lev.data[0]);
+                    
+                    count = write(p_dev->fd, p_data_list->send_lev.data, len);
+                    
+                    del_data(p_data_list, &p_dev->data_head[1], p_dev);
+
+                }
+                else if(p_dev->type == INIT_DEVICE)
+                {
+                    len = p_data_list->send_lev.len;
+                    count = sendto(p_dev->fd,p_data_list->send_lev.data,len,0,(struct sockaddr *)&p_dev->dest_addr,sizeof(struct sockaddr_in));
+                    
+                    del_data(p_data_list, &p_dev->data_head[1],p_dev);
+
+                }
+                else
+                {
+                    len = p_data_list->send_lev.len;
+                    count = write(p_dev->fd, p_data_list->send_lev.data, len);
+                    
+                    del_data(p_data_list, &p_dev->data_head[1], p_dev);
                     
                 }
-
-
+                
             }
-        }
-        else
-        {
-            usleep(10);
+
         }
         
-
 	}
 	return NULL;
 }
@@ -551,15 +539,37 @@ static void Pps_Signal_Handle(int signum)
     int ph;
     
     if(pClock_info->ref_type == REF_SATLITE 
-        && pClockAlarm->alarmBd1pps == FALSE
-        && pClock_info->run_times > RUN_TIME)
+        && pClockAlarm->alarmBd1pps == FALSE)
     {
+
+            if(pClock_info->modify_flag)
+            {
+                 pClock_info->modify_cnt++;
+                if(pClock_info->modify_cnt >= 3)
+                {
+                    p_collect_data->clear_flag = 0;
+                    pClock_info->modify_flag = FALSE;
+                    pClock_info->modify_cnt = 0;
+                }
+                return 0;
+            }
+
+
+            if((p_collect_data->freetofast_flag == 1) || ((pClock_info->run_times == 1))) //仅上电开始的第一次free->fast对齐
+            {
+                
+                Align10m_phase();
+                pClock_info->modify_flag = TRUE;
+                p_collect_data->freetofast_flag = 2;
+                printf("phase excess Max !!\n");
+                return 0;
+            }
 
             phaseOffset = Get_Pps_Rb_PhaseOffset();
             phaseOffset = phaseOffset * 4;
             ph = Smooth_Filter(phaseOffset);
             printf("readPhase=%d collect_phase=%d, count=%d\n",phaseOffset,ph,p_collect_data->ph_number_counter);
-            collect_phase(&pClock_info->data_1Hz,0,phaseOffset);      
+            collect_phase(pClock_info,&pClock_info->data_1Hz,0,phaseOffset);      
     }
 
     g_RootData->flag_usuallyRoutine = TRUE;
@@ -1000,6 +1010,13 @@ void *ThreadUsuallyProcess(void *arg)
             else
                 ClockStateProcess_RB(pClockInfo);
 
+            /**Check whether REF time data is connected full */
+            if(pClockInfo->clock_mode == 1)
+                ClockHandleProcess_OCXO(pClockInfo);
+            else
+                ClockHandleProcess(pClockInfo);
+
+
             display_lcd_running_status(pRootData);   
 			           
             /**Running LED Handle */
@@ -1064,13 +1081,7 @@ void *ThreadUsuallyProcess(void *arg)
             pRootData->flag_usuallyRoutine = FALSE;
         }
 
-        /**Check whether REF time data is connected full */
-        if(pClockInfo->clock_mode == 1)
-            ClockHandleProcess_OCXO(pClockInfo);
-        else
-            ClockHandleProcess(pClockInfo);
-
-        usleep(1000);
+        usleep(10);
     }
 
     
@@ -1170,7 +1181,7 @@ int main(int argc,char *argv[])
     int c;
     int val;
     printf("Hardware Version V1.00\n");
-    printf("SoftWare Version V0.16\n");
+    printf("SoftWare Version V0.15\n");
     
     g_RootData = (struct root_data *)malloc(sizeof(struct root_data));
 	if (g_RootData == NULL)
@@ -1250,7 +1261,7 @@ int main(int argc,char *argv[])
 	}
 
     /** DataSend_Thread thread for senddata handle */
-	err = pthread_create(&g_RootData->p_send,&g_RootData->pattr,(void *)DataSend_Thread,(void *)&g_RootData);
+	err = pthread_create(&g_RootData->p_send,&g_RootData->pattr,(void *)DataSend_Thread,(void *)&g_RootData->dev_head);
     if(err == 0)
     {
 		printf("datasend_pthread succes!\n");

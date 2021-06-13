@@ -24,11 +24,27 @@
 
 #include "common.h"
 
+#define REF_INVALID          0
+#define REF_VALID              1
+
+#define E1FastKaSmall 30
+#define E1FastKaMiddle 40  //<1exp(-9)
+#define E1FastKaLarge 200  //<2exp(-8)
+#define E1FastKaHuge 250   //<4.6ppm
+#define Xo_FEI405_exp_2_8  500//910000   //>2* exp(-8)         1000
+#define E1LockPhaseKp 40         //test  20
+#define E1LockPhaseKa0 40  //64*3/4         48
+#define E1LockPhaseKa1 12  //64*1/4           16
+//#define E1LockConstraint 350
+#define Adjust_exp_8  896157  // FEI405A XO adjust 1*exp(-8)//9.9 500000-800000
+//#define XoAdjust_exp_9  50000   //FEI405A XO adjust  1*exp(-9)
+#define XoAdjust_exp_12 50   //FEI405A adjust 1*exp(-12)
+
 
 #define RUN_TIME 300
 
 
-#define MAX  50
+#define MAX  100
 #define FREE 0x0
 #define FAST 0x1
 #define LOCK 0x2
@@ -39,24 +55,35 @@
 #define REF_NTP     2
 
 
+#define HOLD_DAYTIME           7*86400   /** lyx让改成7天 20201120 */
+
+
 #define RB_CENTER_VALUE  100000
 
+#define P_COEF_FAST      25
+#define P_COEF_LOCK      22
+#define LOCK_NUM                6
+#define UNLOCK_NUM          8
 
 #define PtpFastG1 56  //二20   30X 1015 
 #define PtpLockG1 20   //二6   6 1014
 #define PtpFastConstraint 2000.0
 #define PtpLockConstraint 1000.0
 
+#define RB_STEER_FILE    "/mnt/rbdata"
+#define RB_DATA_LINE     40
 
-#define GpsFastG1 30  //二20   30X 1015 
-#define GpsLockG1 10   //二6   6 1014
-#define GpsLockG2 4   //二4
-#define GpsLockG3 20    //10//
-#define XoAdjust_exp_8 800000.0		//800000.0
-#define XoAdjust_exp_9 50000.0	   // 50000.0
-#define GpsFastConstraint 8000.0
-#define GpsLockConstraint 350.0 //二350.0		//1016g
-#define GpsAccConstraint 60000.0
+#define RB_CENTER_VALUE  10000
+#define GpsFastG1           10     //二20   30X 1015
+#define GpsLockG1           1.1   //10   //二6   6 1014
+#define GpsLockG2           4   //二4
+#define GpsLockG3           1024//10//
+#define XoAdjust_exp_8          800000.0		//800000.0
+#define XoAdjust_exp_9          50000.0	   // 50000.0
+#define GpsFastConstraint           2000.0
+#define GpsLockConstraint           350.0 //二350.0		//1016g
+#define GpsAccConstraint            60000.0
+
 
 
 
@@ -113,6 +140,11 @@ struct collect_data
    
    char  finish_one_flag;   /**获得一次数据  */
    char start_flag;
+
+   int ph_base; //当前秒时刻的ph
+   Uint8 clear_flag;   /** 重新采ph */
+   Uint8 tofast_60s_flag; //状态切换标志 分步调相
+   Uint32 freetofast_flag; //状态切换标志  初始对齐
 
 };
 
@@ -184,7 +216,7 @@ extern void ClockStateProcess_RB(struct clock_info *pClockInfo);
 extern void ClockHandleProcess(struct clock_info *pClockInfo);
 extern void Init_RbClockCenter(struct clock_info *pClock_info);
 
-extern void collect_phase(struct collect_data *p_collect_data,int delay,int ph);
+void collect_phase(struct clock_info *pClockInfo,,struct collect_data *p_collect_data,int delay,int ph)
 
 #endif /* RB_H_ */
 

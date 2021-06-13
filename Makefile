@@ -15,7 +15,6 @@ OBJS	+= manager.o
 OBJS	+= lcd_cmd_process.o
 OBJS	+= lcd_driver.o
 OBJS	+= fpga_time.o
-OBJS	+= list_ctrl.o
 
 CROSS_COMPILE := gcc
 ARM_CROSS_COMPILE := arm-xilinx-linux-gnueabi-gcc

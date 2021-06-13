@@ -6,7 +6,6 @@
 #include "satellite_api.h"
 #include "clock_rb.h"
 
-#define DEV_COUNT  16
 #define SLOT_COUNT 4
 #define SLOT_TYPE_CORE 'A'
 #define SLOT_TYPE_PTP  'B'
@@ -157,7 +156,7 @@ struct SuperVisionINI
 struct root_data{
 
 		struct dev_head dev_head;	//设备信息头
-        struct device dev[DEV_COUNT];		//~{J9SCIh18PEO"~}
+        struct device dev[15];		//~{J9SCIh18PEO"~}
         int dev_fd;
         
         struct SlotList slot_list[6];

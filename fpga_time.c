@@ -319,6 +319,13 @@ void CollectAlarm(struct root_data *pRootData)
 }
 
 
+void Align10m_phase()
+{
+    *(Uint8*)(BASE_ADDR + 0xe9) = 0x01;
+ 
+    printf("===>Align10m_phase\n");
+}
+
 void SetRbClockAlign_Once()
 {
 	Uint32 offset;

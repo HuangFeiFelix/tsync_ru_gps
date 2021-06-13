@@ -30,7 +30,7 @@
 #include <errno.h>
 #include "common.h"
 #include "comm_api.h"
-#include "log.h"
+
 
 
 /*打开串口函数*/
@@ -236,11 +236,9 @@ void add_uart_lcd(struct uart_buf *pUart, unsigned char data)
 
   	}
     
-	if (pUart->flags == 0x01)
+	if ((pUart->flags == 0x01) && (pUart->cur < 1022))
 	{
-
         pUart->buf[pUart->cur++] = data;
-
     }
 
     last_data = data;
@@ -283,7 +281,7 @@ void add_uart_gps(struct uart_buf *pUart, char data)
 		pUart->flags = 0x01;
 		pUart->cur = 0;
 	}
-    else if ((data == 0x0a) && (last_data == 0x0d))
+    else if (data == 0x0a && last_data == 0x0d)
 	{
 		pUart->flags = 0x10;
 		pUart->buf[pUart->cur++] = data;
@@ -292,7 +290,7 @@ void add_uart_gps(struct uart_buf *pUart, char data)
     
 	if (pUart->flags == 0x01)
 	{
-
+		
         pUart->buf[pUart->cur++] = data;
 
         //printf("cur %x\n",pUart->buf[pUart->cur-1]);
@@ -314,11 +312,9 @@ void add_uart_rb(struct uart_buf *pUart, char data)
 		pUart->buf[pUart->cur++] = '\0';
         //printf("cur1 %x \n",pUart->buf[pUart->cur-1]);
   	}
-	else if (pUart->flags == 0x00 && (pUart->cur < 1022))
+	else if (pUart->flags == 0x00)
 	{
-
         pUart->buf[pUart->cur++] = data;
-
         //printf("cur %x \n",pUart->buf[pUart->cur-1]);
     }
 
@@ -365,31 +361,28 @@ void init_dev_head(struct dev_head *new_head)
 	FD_ZERO(&new_head->fd_set);
 	FD_ZERO(&new_head->tmp_set);
 	new_head->max_fd = 0;
+	pthread_rwlock_init(&new_head->dev_rwlock, NULL);
 	for (i = 0; i < 2; i++)
-	{
 		sem_init(&new_head->sem[i], 0, 0);
-    }
-    dev_queue_init(&new_head->recv_queue);
-    dev_queue_init(&new_head->send_queue);
+	INIT_LIST_HEAD(&new_head->list_head);
 }
 
 void init_device(struct device *new_dev, int type, int dev_id)
 {
 	new_dev->dev_id = dev_id;
 	new_dev->type = type;
-    new_dev->valid = TRUE;
 }
-
 
 int del_dev(struct device *p_dev, struct dev_head *dev_head)
 {
 	int i = 0;
 	struct data_list *p_data_list = NULL, *tmp_data_list = NULL;
+	del_list(&p_dev->list_head, &dev_head->dev_rwlock);   //chenjiayi
 	for (i = 0; i < 3; i++)
 	{
 		list_for_each_entry_safe(p_data_list,tmp_data_list,&p_dev->data_head[i].list_head,list_head)
 			del_data(p_data_list, &p_dev->data_head[i], p_dev);  //
-			
+		pthread_rwlock_destroy(p_dev->data_head[i].list_rwlock);
 		free(p_dev->data_head[i].list_rwlock);
 	}
 	//free(p_dev);
@@ -398,7 +391,9 @@ int del_dev(struct device *p_dev, struct dev_head *dev_head)
 
 int add_dev_list(struct device *p_dev, struct dev_head *dev_head)
 {
+	pthread_rwlock_wrlock(&dev_head->dev_rwlock);
 	list_add(&p_dev->list_head, &dev_head->list_head);
+	pthread_rwlock_unlock(&dev_head->dev_rwlock);
 	return TRUE;
 }
 
@@ -524,6 +519,7 @@ int open_int(struct device *p_dev, struct dev_head *dev_head)
 int open_dev(struct device *p_dev, struct dev_head *dev_head)
 {
 	int i = 0;
+	pthread_rwlock_t *dev_rwlock[3];
 
 	if (p_dev->open_dev == NULL )
 	{
@@ -548,6 +544,22 @@ int open_dev(struct device *p_dev, struct dev_head *dev_head)
 	}
 	p_dev->open_dev(p_dev, dev_head);
 
+	for (i = 0; i < 3; i++)
+	{
+
+		dev_rwlock[i] = (pthread_rwlock_t *) malloc(sizeof(pthread_rwlock_t));
+		pthread_rwlock_init(dev_rwlock[i], NULL );
+		init_data_head(&p_dev->data_head[i], i, dev_rwlock[i]);
+	}
+
+	for (i = 0;i < 2;i ++)
+		p_dev->p_sem[i] = &dev_head->sem[i];
+
+    p_dev->data_head[0].type = 0;/**接收为0  */
+    p_dev->data_head[1].type = 1;/**发送为1  */
+
+    
+	add_dev_list(p_dev, dev_head);
 	return TRUE;
 }
 
@@ -571,7 +583,7 @@ int recv_udp_data(struct device *p_dev, struct dev_head *dev_head)
         if((len = recvfrom(fd,pBuf,BUFFER_SIZE,0,(struct sockaddr*)&p_dev->dest_addr,&p_dev->sock_len)) > 0)
         {
             //printf("recv udp data\n");
-            add_recv(dev_head,p_dev,pBuf,len);
+            add_recv(pBuf,fd,len,p_dev);
         }
     }
 
@@ -609,7 +621,7 @@ int recv_net_data(struct device *p_dev, struct dev_head *dev_head)
 				if ((len = read(client_fd, p_buf, BUFFER_SIZE)) > 0)
 				{
 					p_buf[len++] = '\0';   //chenjiayi
-					add_recv(dev_head,p_dev,p_buf,len);
+					add_recv(p_buf, client_fd,len, p_dev);
 				} else
 				{
 					close(client_fd);
@@ -635,7 +647,7 @@ int recv_ui_com_data(struct device *p_dev, struct dev_head *dev_head)
 	if (p_dev->com_attr.uart_buf.flags == 0x10)
 	{
 
-        add_recv(dev_head,p_dev,p_buf,p_dev->com_attr.uart_buf.cur);
+		add_recv(p_buf, fd,p_dev->com_attr.uart_buf.cur, p_dev);
 		p_dev->com_attr.uart_buf.flags = 0x00;
 	}
 	return TRUE;
@@ -654,7 +666,7 @@ int recv_gps_com_data(struct device *p_dev, struct dev_head *dev_head)
 	if (p_dev->com_attr.uart_buf.flags == 0x10)
 	{
 
-        add_recv(dev_head,p_dev,p_buf,p_dev->com_attr.uart_buf.cur);  
+		add_recv(p_buf, fd,p_dev->com_attr.uart_buf.cur, p_dev);
 		p_dev->com_attr.uart_buf.flags = 0x00;
 	}
 	return TRUE;
@@ -675,9 +687,7 @@ int recv_lcd_com_data(struct device *p_dev, struct dev_head *dev_head)
 	if (p_dev->com_attr.uart_buf.flags == 0x10)
 	{
 
-		//add_recv(p_buf, fd,p_dev->com_attr.uart_buf.cur-2, p_dev);
-        add_recv(dev_head,p_dev,p_buf,p_dev->com_attr.uart_buf.cur-2);
-        
+		add_recv(p_buf, fd,p_dev->com_attr.uart_buf.cur-2, p_dev);
 		p_dev->com_attr.uart_buf.flags = 0x00;
 	}
 
@@ -695,9 +705,9 @@ int recv_ppstod_com_data(struct device *p_dev, struct dev_head *dev_head)
 			add_uart_ppstod(&p_dev->com_attr.uart_buf, buf);
 	}
 	if (p_dev->com_attr.uart_buf.flags == 0x10)
-	{       
-        add_recv(dev_head,p_dev,p_buf,p_dev->com_attr.uart_buf.cur);        
-
+	{
+		add_recv(p_buf, fd,p_dev->com_attr.uart_buf.cur, p_dev);
+        
 		p_dev->com_attr.uart_buf.flags = 0x00;
 	}
 	return TRUE;
@@ -713,8 +723,8 @@ int recv_rb_com_data(struct device *p_dev, struct dev_head *dev_head)
 			add_uart_rb(&p_dev->com_attr.uart_buf, buf);
 	}
 	if (p_dev->com_attr.uart_buf.flags == 0x10)
-	{        
-        add_recv(dev_head,p_dev,p_buf,p_dev->com_attr.uart_buf.cur);        
+	{
+		add_recv(p_buf, fd,p_dev->com_attr.uart_buf.cur, p_dev);
 		p_dev->com_attr.uart_buf.flags = 0x00;
         p_dev->com_attr.uart_buf.cur = 0;
 	}
@@ -724,15 +734,15 @@ int recv_rb_com_data(struct device *p_dev, struct dev_head *dev_head)
 
 int recv_int_data(struct device *p_dev, struct dev_head *dev_head)
 {
-    char *p_buf = p_dev->net_attr.buf;
+    char *pBuf = p_dev->net_attr.buf;
     int fd = p_dev->fd, len = 0;
        
     if(FD_ISSET(fd,&dev_head->tmp_set) > 0)
     {
-        if((len = recvfrom(fd,p_buf,BUFFER_SIZE,0,(struct sockaddr*)&p_dev->dest_addr,&p_dev->sock_len)) > 0)
+        if((len = recvfrom(fd,pBuf,BUFFER_SIZE,0,(struct sockaddr*)&p_dev->dest_addr,&p_dev->sock_len)) > 0)
         {
-            syslog(CLOG_DEBUG,"recv int data\n");
-            add_recv(dev_head,p_dev,p_buf,len);        
+            printf("recv int data\n");
+            add_recv(pBuf,fd,len,p_dev);
         }
     }
 
@@ -750,7 +760,7 @@ int recv_data(struct device *p_dev, struct dev_head *dev_head)
 		switch(p_dev->type)
 		{
     		case TCP_DEVICE:
-    			//p_dev->recv_data = recv_net_data;
+    			p_dev->recv_data = recv_net_data;
     			break;
     		case COMM_DEVICE:
                 switch(p_dev->dev_id)
