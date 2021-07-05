@@ -58,8 +58,6 @@
 #define HOLD_DAYTIME           7*86400   /** lyx让改成7天 20201120 */
 
 
-#define RB_CENTER_VALUE  100000
-
 #define P_COEF_FAST      25
 #define P_COEF_LOCK      22
 #define LOCK_NUM                6
@@ -84,21 +82,6 @@
 #define GpsLockConstraint           350.0 //二350.0		//1016g
 #define GpsAccConstraint            60000.0
 
-
-
-
-#define E1FastKaSmall 30
-#define E1FastKaMiddle 40  //<1exp(-9)
-#define E1FastKaLarge 200  //<2exp(-8)
-#define E1FastKaHuge 250   //<4.6ppm
-#define Xo_FEI405_exp_2_8  500//910000   //>2* exp(-8)	 1000
-#define E1LockPhaseKp 40         //test  20
-#define E1LockPhaseKa0 40  //64*3/4	 48
-#define E1LockPhaseKa1 12  //64*1/4	   16
-//#define E1LockConstraint 350
-#define Adjust_exp_8  896157  // FEI405A XO adjust 1*exp(-8)//9.9 500000-800000
-//#define XoAdjust_exp_9  50000   //FEI405A XO adjust  1*exp(-9)
-#define XoAdjust_exp_12 50   //FEI405A adjust 1*exp(-12)
 
 
 struct clock_alarm_data
@@ -169,7 +152,8 @@ struct clock_info
    double     IDetPhase;		 /*偏差值*/
    int     PrelDetPhase;	 /*上一次的偏差值*/
    int     PrelDetDdsAdj;	 //上一次晶体钟调整值
-   
+
+   int     SmoothStage;
    double     lAccPhaseAll;	 /*偏差差累加值*/
    int     OffsetAll;	     /*偏差差累加值*/
 
@@ -191,6 +175,7 @@ struct clock_info
    unsigned int fast_times; /*快捕用时长度*/
    unsigned int lock_times; /*跟踪用时长度*/
    unsigned int hold_times; /*保持用时长度*/
+   unsigned int free_times;
 
     
     /**参考源相关  */
@@ -216,7 +201,7 @@ extern void ClockStateProcess_RB(struct clock_info *pClockInfo);
 extern void ClockHandleProcess(struct clock_info *pClockInfo);
 extern void Init_RbClockCenter(struct clock_info *pClock_info);
 
-void collect_phase(struct clock_info *pClockInfo,,struct collect_data *p_collect_data,int delay,int ph)
+void collect_phase(struct clock_info *pClockInfo,struct collect_data *p_collect_data,int delay,int ph);
 
 #endif /* RB_H_ */
 

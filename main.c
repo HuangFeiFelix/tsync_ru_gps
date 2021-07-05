@@ -321,7 +321,7 @@ void InitDev(struct root_data *pRootData)
 
     /**ENUM_GPS for gps device id=1  */
     pRootData->dev[ENUM_GPS].com_attr.com_port = ENUM_GPS;
-    pRootData->dev[ENUM_GPS].com_attr.baud_rate = 9600;
+    pRootData->dev[ENUM_GPS].com_attr.baud_rate = 115200;
     init_add_dev(&pRootData->dev[ENUM_GPS],&pRootData->dev_head,COMM_DEVICE,ENUM_GPS);
     
     /**ENUM_RB for RB clock ,device id=2  */
@@ -542,28 +542,6 @@ static void Pps_Signal_Handle(int signum)
         && pClockAlarm->alarmBd1pps == FALSE)
     {
 
-            if(pClock_info->modify_flag)
-            {
-                 pClock_info->modify_cnt++;
-                if(pClock_info->modify_cnt >= 3)
-                {
-                    p_collect_data->clear_flag = 0;
-                    pClock_info->modify_flag = FALSE;
-                    pClock_info->modify_cnt = 0;
-                }
-                return 0;
-            }
-
-
-            if((p_collect_data->freetofast_flag == 1) || ((pClock_info->run_times == 1))) //仅上电开始的第一次free->fast对齐
-            {
-                
-                Align10m_phase();
-                pClock_info->modify_flag = TRUE;
-                p_collect_data->freetofast_flag = 2;
-                printf("phase excess Max !!\n");
-                return 0;
-            }
 
             phaseOffset = Get_Pps_Rb_PhaseOffset();
             phaseOffset = phaseOffset * 4;

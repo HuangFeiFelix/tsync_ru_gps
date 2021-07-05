@@ -60,7 +60,7 @@ int Filter(int val)
     Uint8 text[RB_DATA_LINE][1024];
     
     struct collect_data *p_collect_data = &pClockInfo->data_1Hz;
-    struct Satellite_Data *pSateData = &g_root->satellite_data;
+    struct Satellite_Data *pSateData = &g_RootData->satellite_data;
     
     struct tm *tm;
     time_t seconds = time(NULL);
@@ -68,7 +68,7 @@ int Filter(int val)
     FILE *rb_file_fd = fopen(RB_STEER_FILE,"a+");
     if(rb_file_fd == NULL)
     {
-      PLOG("cannot find rbdata file!\n");
+      printf("cannot find rbdata file!\n");
       return -1;
     }
 
@@ -85,7 +85,7 @@ int Filter(int val)
     rb_file_fd = fopen(RB_STEER_FILE,"w+"); //新开
     if(rb_file_fd == NULL)
     {
-      PLOG("cannot find rbdata file!\n");
+      printf("cannot find rbdata file!\n");
       return -1;
     }
 
@@ -98,11 +98,11 @@ int Filter(int val)
     tm = gmtime(&seconds);
     
     memset(line_str,0,sizeof(line_str));
-    sprintf(line_str,"center:%8d workStatus:%d clock_temp:%f \
+    sprintf(line_str,"center:%8d workStatus:%d \
 %2d %2d \
 %2d %2d \
 %04d/%02d/%02d %02d:%02d:%02d\n"
-      ,pClockInfo->center,pClockInfo->workStatus,pSateData->clock_temp
+      ,pClockInfo->center,pClockInfo->workStatus
       ,p_collect_data->ph_number,p_collect_data->queue_number
       ,pClockInfo->lockCounter,pClockInfo->unlockCounter
       ,tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec);
@@ -315,50 +315,50 @@ int Smooth_Filter(int val)
   * @param  struct clock_info *   、时延(E1收集时延为0)、鉴相值(10ns)、
   * @retval None
   */
-void collect_phase(struct clock_info *pClockInfo,,struct collect_data *p_collect_data,int delay,int ph)
+void collect_phase(struct clock_info *pClockInfo,struct collect_data *p_collect_data,int delay,int ph)
 {
      int ph_temp=0;
-        int temp=0;
-        float sum=0;
-        
-        if(p_collect_data->clear_flag == 0)   /** 获得基准ph */
-        {
-            printf("get new ph_base\n");
-            p_collect_data->ph_base = ph;
-             p_collect_data->add_ph=0;
-            pClockInfo->lPhasePrevious = 0;
-             p_collect_data->queue_number_counter=0;
-             p_collect_data->ph_number_counter=0;
-            p_collect_data->clear_flag = 1;
-            return;
-        }
-    
-        ph_temp = ph - p_collect_data->ph_base;  /*延时补偿*/
-        printf("collect_phase= %d count= %d ph_base= %d \n",ph,p_collect_data->queue_number_counter,p_collect_data->ph_base);
-    
-        p_collect_data->ph_number_counter++;
-    
-        if(p_collect_data->ph_number_counter >= p_collect_data->ph_number)   /*记数满一组 11*/
-        {
-              p_collect_data->phase_array[p_collect_data->queue_number_counter] = p_collect_data->add_ph;
-              syslog(CLOG_DEBUG,"addph[%d] = %d \n", p_collect_data->queue_number_counter,p_collect_data->add_ph);
-    
-              p_collect_data->queue_number_counter++;
-              p_collect_data->add_ph=0;
-              p_collect_data->ph_number_counter=0;   /*本组记数清0*/
-              
-              if( p_collect_data->queue_number_counter >= p_collect_data->queue_number)  /*队列接收一组数据 20*/
+    int temp=0;
+    float sum=0;
+
+    if(p_collect_data->clear_flag == 0)   /** 获得基准ph */
+    {
+        printf("get new ph_base\n");
+        p_collect_data->ph_base = ph;
+        p_collect_data->add_ph=0;
+        pClockInfo->lPhasePrevious = 0;
+        p_collect_data->queue_number_counter=0;
+        p_collect_data->ph_number_counter=0;
+        p_collect_data->clear_flag = 1;
+        return;
+    }
+
+    ph_temp = ph - p_collect_data->ph_base;  /*延时补偿*/
+    printf("collect_phase= %d count= %d ph_base= %d \n",ph,p_collect_data->queue_number_counter,p_collect_data->ph_base);
+
+    p_collect_data->ph_number_counter++;
+
+    if(p_collect_data->ph_number_counter >= p_collect_data->ph_number)   /*记数满一组 11*/
+    {
+          p_collect_data->phase_array[p_collect_data->queue_number_counter] = p_collect_data->add_ph;
+          syslog(CLOG_DEBUG,"addph[%d] = %d \n", p_collect_data->queue_number_counter,p_collect_data->add_ph);
+
+          p_collect_data->queue_number_counter++;
+          p_collect_data->add_ph=0;
+          p_collect_data->ph_number_counter=0;   /*本组记数清0*/
+          
+          if( p_collect_data->queue_number_counter >= p_collect_data->queue_number)  /*队列接收一组数据 20*/
+          {
+              for(temp=0; temp<p_collect_data->queue_number_counter; temp++)
               {
-                  for(temp=0; temp<p_collect_data->queue_number_counter; temp++)
-                  {
-                      sum += p_collect_data->phase_array[temp];
-                  }
-                  p_collect_data->lAvgPhase = sum / (p_collect_data->ph_number);      /*计算平均相位值*/
-                  printf("sum %f  avg_current = %f \n", sum,p_collect_data->lAvgPhase);
-                  p_collect_data->queue_number_counter = 0;/*记数清0*/
-                  p_collect_data->getdata_flag = 1;
+                  sum += p_collect_data->phase_array[temp];
               }
-        }
+              p_collect_data->lAvgPhase = sum / (p_collect_data->ph_number);      /*计算平均相位值*/
+              printf("sum %f  avg_current = %f \n", sum,p_collect_data->lAvgPhase);
+              p_collect_data->queue_number_counter = 0;/*记数清0*/
+              p_collect_data->getdata_flag = 1;
+          }
+    }
 
 
 }
@@ -1062,12 +1062,12 @@ void gps_status_machine(struct clock_info *p_clock_info,char ref_status)
             {
                 tofast_cnt++;
                /** 进快捕保护 201026 */
-                if((100 == tofast_cnt) && (g_RootData->satellite_data.satellite_see > 4 && g_RootData->satellite_data.satellite_use > 4))
+                if((100 == tofast_cnt) && (g_RootData->satellite_data.satellite_see > 4))
                 {
                     p_clock_info->workStatus=FAST;  /*参考源正常下等100s */
                     tofast_cnt = 0;
                 }
-                else if(g_RootData->satellite_data.satellite_see <= 4 || g_RootData->satellite_data.satellite_use <= 4) //重复了 进不来
+                else if(g_RootData->satellite_data.satellite_see <= 4) //重复了 进不来
                     tofast_cnt = 0;
             }
             else /*参考源告警*/

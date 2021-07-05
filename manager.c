@@ -3937,7 +3937,7 @@ void handle_ptp_data_message(struct root_data *pRootData,char *buf,int len)
 					printf("readPhase=%lld collect_phase=%d, count=%d\n",time_offset,ph,p_collect_data->ph_number_counter);
                     //ptp Ê±ÑÓ²¹³¥ 1000 ns 
                     
-                    collect_phase(&pClockInfo->data_1Hz,0,ph);	
+                    collect_phase(pClockInfo,&pClockInfo->data_1Hz,0,ph);	
 				}
 
 			}
@@ -3969,7 +3969,7 @@ void handle_ntp_data_message(struct root_data *pRootData,char *buf,int len)
 	
     struct Satellite_Data *pSateData = &pRootData->satellite_data;       
     static short  secErrorCnt = 0;
-	static short  secNanoCnt = 0;
+	static Uint8 secNanoCnt = 0;
     Slonglong64 time_offset;        /**~{J1<dF+2n~}  */ 
 	
     int ph;
@@ -3995,6 +3995,13 @@ void handle_ntp_data_message(struct root_data *pRootData,char *buf,int len)
 		pClockAlarm->alarmNtp = 0;
         printf("handle ntpData timeOffset sec=%d usec=%d\n",pNtpRefData->offset_Second,pNtpRefData->offset_Usecond);
 
+
+        if(secNanoCnt > 0)
+        {
+             secNanoCnt--;
+             return;
+        }
+        
         if(abs(pNtpRefData->offset_Second) >= 1)
         {
         	GetFpgaRuningTime(&tv_now);
@@ -4030,7 +4037,9 @@ void handle_ntp_data_message(struct root_data *pRootData,char *buf,int len)
 
 			}
 			else
-			{}
+			{
+                secNanoCnt = 5;
+            }
 
         }
         else
